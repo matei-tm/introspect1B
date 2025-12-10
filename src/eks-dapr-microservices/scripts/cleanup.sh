@@ -43,21 +43,50 @@ fi
 # Optionally delete EKS cluster
 read -p "Do you want to delete the EKS cluster? (y/n): " delete_cluster
 if [ "$delete_cluster" = "y" ]; then
-    echo "🗑️  Deleting EKS cluster..."
+    echo "🗑️  Deleting EKS cluster and node groups..."
+    
+    # First, delete all node groups
+    echo "🗑️  Listing and deleting node groups..."
+    NODEGROUPS=$(aws eks list-nodegroups --cluster-name $CLUSTER_NAME --region $AWS_REGION --query 'nodegroups[*]' --output text 2>/dev/null)
+    
+    if [ -n "$NODEGROUPS" ]; then
+        for ng in $NODEGROUPS; do
+            echo "🗑️  Deleting node group: $ng"
+            aws eks delete-nodegroup --cluster-name $CLUSTER_NAME --nodegroup-name $ng --region $AWS_REGION 2>/dev/null || echo "⚠️  Failed to delete node group $ng"
+        done
+        
+        # Wait for all node groups to be deleted
+        echo "⏳ Waiting for node groups to be deleted..."
+        echo "   (This may take 5-10 minutes)"
+        while true; do
+            REMAINING=$(aws eks list-nodegroups --cluster-name $CLUSTER_NAME --region $AWS_REGION --query 'nodegroups[*]' --output text 2>/dev/null)
+            if [ -z "$REMAINING" ]; then
+                echo "✅ All node groups deleted!"
+                break
+            fi
+            echo "⏳ Node groups still deleting... (checking again in 30 seconds)"
+            sleep 30
+        done
+    else
+        echo "ℹ️  No node groups found or cluster doesn't exist"
+    fi
+    
+    # Now delete the cluster
+    echo "🗑️  Deleting EKS cluster $CLUSTER_NAME..."
     eksctl delete cluster --name $CLUSTER_NAME --region $AWS_REGION
     
     # Wait for cluster deletion to complete
     echo ""
     echo "⏳ Waiting for cluster deletion to complete..."
-    echo "   (This may take 10-15 minutes)"
+    echo "   (This may take 5-10 minutes)"
     
     while true; do
         # Check if cluster still exists
         if eksctl get cluster --name $CLUSTER_NAME --region $AWS_REGION &>/dev/null; then
-            echo "⏳ Cluster still deleting... (checking again in 30 seconds)"
+            echo "⏳ Cluster $CLUSTER_NAME still deleting... (checking again in 30 seconds)"
             sleep 30
         else
-            echo "✅ Cluster successfully deleted!"
+            echo "✅ Cluster $CLUSTER_NAME successfully deleted!"
             break
         fi
     done
