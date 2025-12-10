@@ -54,8 +54,12 @@ metadata:
   name: $CLUSTER_NAME
   region: $AWS_REGION
 
+autoModeConfig:
+  enabled: false
+
 iam:
   serviceRoleARN: $EKS_CLUSTER_ROLE_ARN
+  withOIDC: true
 
 managedNodeGroups:
   - name: standard-workers
