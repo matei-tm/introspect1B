@@ -30,6 +30,16 @@ command -v docker >/dev/null 2>&1 || { echo -e "${RED}❌ Docker is required but
 
 echo -e "${GREEN}✅ All prerequisites found${NC}"
 
+# Create/verify IAM roles
+echo -e "\n${YELLOW}🔐 Creating/verifying IAM roles...${NC}"
+./scripts/create-iam-roles.sh
+
+# Get role ARNs
+EKS_CLUSTER_ROLE_ARN=$(aws iam get-role --role-name EKSClusterRole --query 'Role.Arn' --output text)
+EKS_NODE_ROLE_ARN=$(aws iam get-role --role-name EKSNodeRole --query 'Role.Arn' --output text)
+
+echo -e "${GREEN}✅ IAM roles ready${NC}"
+
 # Create EKS cluster if needed
 read -p "Do you want to create a new EKS cluster? (y/n): " create_cluster
 if [ "$create_cluster" = "y" ]; then
@@ -37,11 +47,13 @@ if [ "$create_cluster" = "y" ]; then
     eksctl create cluster \
         --name $CLUSTER_NAME \
         --region $AWS_REGION \
+        --role-arn $EKS_CLUSTER_ROLE_ARN \
         --nodegroup-name standard-workers \
         --node-type t2.micro \
         --nodes 2 \
         --nodes-min 1 \
         --nodes-max 3 \
+        --node-role-arn $EKS_NODE_ROLE_ARN \
         --managed
     
     echo -e "${GREEN}✅ EKS cluster created${NC}"
