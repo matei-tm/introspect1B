@@ -15,12 +15,14 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
+        working-directory: src/labinit
         run: npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
       - name: Run Playwright tests
+        working-directory: src/labinit
         env:
           SITE_USER: ${{ secrets.SITE_USER }}
           SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
@@ -31,7 +33,7 @@ jobs:
         run: |
           echo "## Failed screenshots" >> "$GITHUB_STEP_SUMMARY"
           shopt -s nullglob
-          for f in test-results/**/*.png; do
+          for f in src/labinit/test-results/**/*.png; do
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "### $(basename "$f")" >> "$GITHUB_STEP_SUMMARY"
             echo "![creenshot" >> "$GITHUB_STEP_SUMMARY"
