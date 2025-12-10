@@ -38,10 +38,10 @@ if [ "$create_cluster" = "y" ]; then
         --name $CLUSTER_NAME \
         --region $AWS_REGION \
         --nodegroup-name standard-workers \
-        --node-type t3.medium \
-        --nodes 3 \
-        --nodes-min 2 \
-        --nodes-max 4 \
+        --node-type t2.micro \
+        --nodes 2 \
+        --nodes-min 1 \
+        --nodes-max 3 \
         --managed
     
     echo -e "${GREEN}✅ EKS cluster created${NC}"
