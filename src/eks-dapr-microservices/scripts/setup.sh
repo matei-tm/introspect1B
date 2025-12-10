@@ -40,6 +40,14 @@ EKS_NODE_ROLE_ARN=$(aws iam get-role --role-name EKSNodeRole --query 'Role.Arn' 
 
 echo -e "${GREEN}✅ IAM roles ready${NC}"
 
+# Create VPC
+echo -e "\n${YELLOW}🌐 Creating VPC for EKS...${NC}"
+./scripts/create-vpc.sh
+
+# Load VPC information
+source /tmp/vpc-info.txt
+echo -e "${GREEN}✅ VPC ready${NC}"
+
 # Create EKS cluster if needed
 read -p "Do you want to create a new EKS cluster? (y/n): " create_cluster
 if [ "$create_cluster" = "y" ]; then
@@ -56,6 +64,15 @@ metadata:
 
 autoModeConfig:
   enabled: false
+
+vpc:
+  id: "$VPC_ID"
+  subnets:
+    public:
+      ${AWS_REGION}a:
+        id: "$SUBNET_1_ID"
+      ${AWS_REGION}b:
+        id: "$SUBNET_2_ID"
 
 iam:
   serviceRoleARN: $EKS_CLUSTER_ROLE_ARN

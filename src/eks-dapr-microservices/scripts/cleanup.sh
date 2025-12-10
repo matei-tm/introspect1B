@@ -63,4 +63,54 @@ if [ "$delete_cluster" = "y" ]; then
     done
 fi
 
+# Optionally delete VPC
+read -p "Do you want to delete the VPC? (y/n): " delete_vpc
+if [ "$delete_vpc" = "y" ]; then
+    echo "🗑️  Deleting VPC resources..."
+    
+    # Load VPC information if available
+    if [ -f /tmp/vpc-info.txt ]; then
+        source /tmp/vpc-info.txt
+        
+        # Delete subnets
+        if [ -n "$SUBNET_1_ID" ]; then
+            echo "🗑️  Deleting Subnet 1..."
+            aws ec2 delete-subnet --subnet-id $SUBNET_1_ID --region $AWS_REGION 2>/dev/null || echo "⚠️  Subnet 1 not found or already deleted"
+        fi
+        
+        if [ -n "$SUBNET_2_ID" ]; then
+            echo "🗑️  Deleting Subnet 2..."
+            aws ec2 delete-subnet --subnet-id $SUBNET_2_ID --region $AWS_REGION 2>/dev/null || echo "⚠️  Subnet 2 not found or already deleted"
+        fi
+        
+        # Delete route table (custom ones, not main)
+        if [ -n "$ROUTE_TABLE_ID" ]; then
+            echo "🗑️  Deleting Route Table..."
+            aws ec2 delete-route-table --route-table-id $ROUTE_TABLE_ID --region $AWS_REGION 2>/dev/null || echo "⚠️  Route table not found or already deleted"
+        fi
+        
+        # Detach and delete Internet Gateway
+        if [ -n "$IGW_ID" ] && [ -n "$VPC_ID" ]; then
+            echo "🗑️  Detaching Internet Gateway..."
+            aws ec2 detach-internet-gateway --internet-gateway-id $IGW_ID --vpc-id $VPC_ID --region $AWS_REGION 2>/dev/null || echo "⚠️  IGW already detached"
+            
+            echo "🗑️  Deleting Internet Gateway..."
+            aws ec2 delete-internet-gateway --internet-gateway-id $IGW_ID --region $AWS_REGION 2>/dev/null || echo "⚠️  IGW not found or already deleted"
+        fi
+        
+        # Delete VPC
+        if [ -n "$VPC_ID" ]; then
+            echo "🗑️  Deleting VPC..."
+            aws ec2 delete-vpc --vpc-id $VPC_ID --region $AWS_REGION 2>/dev/null || echo "⚠️  VPC not found or already deleted"
+            echo "✅ VPC deleted!"
+        fi
+        
+        # Clean up temp file
+        rm -f /tmp/vpc-info.txt
+    else
+        echo "⚠️  VPC information file not found. Cannot auto-delete VPC resources."
+        echo "    Please manually delete VPC resources from AWS Console if needed."
+    fi
+fi
+
 echo "✅ Cleanup complete!"

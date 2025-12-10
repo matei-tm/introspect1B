@@ -128,7 +128,7 @@ eksctl create cluster \
   --name dapr-demo-cluster \
   --region us-east-1 \
   --nodegroup-name standard-workers \
-  --node-type t3.medium \
+  --node-type t3.micro \
   --nodes 3 \
   --nodes-min 2 \
   --nodes-max 4 \
