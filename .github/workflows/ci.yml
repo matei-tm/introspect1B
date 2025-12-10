@@ -1,0 +1,39 @@
+﻿name: Playwright test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        env:
+          SITE_USER: ${{ secrets.SITE_USER }}
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+        run: npm test
+
+      - name: Add all screenshots to summary
+        if: always()
+        run: |
+          echo "## Failed screenshots" >> "$GITHUB_STEP_SUMMARY"
+          shopt -s nullglob
+          for f in test-results/**/*.png; do
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "### $(basename "$f")" >> "$GITHUB_STEP_SUMMARY"
+            echo "![creenshot" >> "$GITHUB_STEP_SUMMARY"
+          done
