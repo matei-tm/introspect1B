@@ -1,0 +1,16 @@
+{
+  "name": "publisher-service",
+  "version": "1.0.0",
+  "description": "Publisher microservice for EKS Dapr demo",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

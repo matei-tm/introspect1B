@@ -1,0 +1,21 @@
+# Dapr Pub/Sub Component using Redis
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: messagepubsub
+  namespace: dapr-demo
+spec:
+  type: pubsub.redis
+  version: v1
+  metadata:
+  - name: redisHost
+    value: redis-master.dapr-demo.svc.cluster.local:6379
+  - name: redisPassword
+    secretKeyRef:
+      name: redis
+      key: redis-password
+  - name: enableTLS
+    value: "false"
+scopes:
+  - publisher
+  - subscriber

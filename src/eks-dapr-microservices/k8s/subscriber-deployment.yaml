@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: subscriber
+  namespace: dapr-demo
+  labels:
+    app: subscriber
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: subscriber
+  template:
+    metadata:
+      labels:
+        app: subscriber
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "subscriber"
+        dapr.io/app-port: "3001"
+        dapr.io/log-level: "info"
+        dapr.io/enable-metrics: "true"
+        dapr.io/metrics-port: "9090"
+    spec:
+      containers:
+      - name: subscriber
+        image: <YOUR_ECR_REGISTRY>/subscriber-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3001
+          name: http
+        env:
+        - name: PORT
+          value: "3001"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 5
+          periodSeconds: 5
