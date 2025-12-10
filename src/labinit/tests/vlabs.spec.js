@@ -26,7 +26,14 @@ test('vlabs start button flow', async ({ page }) => {
     
     // Wait for login to complete and next page to load
     await page.waitForTimeout(2000);
-    
+    // Check for cleanup message and wait if present
+    for (let i = 0; i < 10; i++) {
+      const cleanupMsg = page.locator('h3.progress-text:has-text("Cleanup - InProgress")');
+      if (await cleanupMsg.count() === 0) {
+        break;
+      }
+      await page.waitForTimeout(60000); // Wait 1 minute
+    }
     // Click View Lab button
     await page.locator('div.btn.btn-default.btn-xs.roundedButton:has-text("View Lab")').click();
     
