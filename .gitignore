@@ -2,3 +2,5 @@
 .playwright
 npm-debug.log
 test-results/
+.cursor/
+.DS_Store
