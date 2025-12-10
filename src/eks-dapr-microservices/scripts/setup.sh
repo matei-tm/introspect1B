@@ -44,18 +44,32 @@ echo -e "${GREEN}✅ IAM roles ready${NC}"
 read -p "Do you want to create a new EKS cluster? (y/n): " create_cluster
 if [ "$create_cluster" = "y" ]; then
     echo -e "\n${YELLOW}🏗️  Creating EKS cluster...${NC}"
-    eksctl create cluster \
-        --name $CLUSTER_NAME \
-        --region $AWS_REGION \
-        --role-arn $EKS_CLUSTER_ROLE_ARN \
-        --nodegroup-name standard-workers \
-        --node-type t2.micro \
-        --nodes 2 \
-        --nodes-min 1 \
-        --nodes-max 3 \
-        --node-role-arn $EKS_NODE_ROLE_ARN \
-        --managed
     
+    # Create cluster configuration file
+    cat > /tmp/cluster-config.yaml <<EOF
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: $CLUSTER_NAME
+  region: $AWS_REGION
+
+iam:
+  serviceRoleARN: $EKS_CLUSTER_ROLE_ARN
+
+managedNodeGroups:
+  - name: standard-workers
+    instanceType: t2.micro
+    minSize: 1
+    maxSize: 3
+    desiredCapacity: 2
+    iam:
+      instanceRoleARN: $EKS_NODE_ROLE_ARN
+EOF
+    
+    eksctl create cluster -f /tmp/cluster-config.yaml
+    
+    rm -f /tmp/cluster-config.yaml
     echo -e "${GREEN}✅ EKS cluster created${NC}"
 fi
 
