@@ -7,7 +7,10 @@ resource "kubernetes_namespace" "dapr_demo" {
     }
   }
 
-  depends_on = [module.eks]
+  depends_on = [
+    module.eks,
+    null_resource.update_kubeconfig
+  ]
 }
 
 # Kubernetes Service Account with IRSA
@@ -20,5 +23,8 @@ resource "kubernetes_service_account" "dapr" {
     }
   }
 
-  depends_on = [module.eks]
+  depends_on = [
+    module.eks,
+    null_resource.update_kubeconfig
+  ]
 }

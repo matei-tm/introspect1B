@@ -17,7 +17,10 @@ resource "helm_release" "dapr" {
     })
   ]
 
-  depends_on = [module.eks]
+  depends_on = [
+    module.eks,
+    null_resource.update_kubeconfig
+  ]
 }
 
 # Metrics Server
@@ -33,5 +36,8 @@ resource "helm_release" "metrics_server" {
     value = "{--kubelet-insecure-tls}"
   }
 
-  depends_on = [module.eks]
+  depends_on = [
+    module.eks,
+    null_resource.update_kubeconfig
+  ]
 }

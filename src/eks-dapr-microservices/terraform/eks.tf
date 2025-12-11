@@ -71,3 +71,16 @@ module "eks" {
     Name = var.cluster_name
   }
 }
+
+# Update kubeconfig after cluster is created
+resource "null_resource" "update_kubeconfig" {
+  depends_on = [module.eks]
+
+  provisioner "local-exec" {
+    command = "aws eks update-kubeconfig --region ${var.aws_region} --name ${module.eks.cluster_name}"
+  }
+
+  triggers = {
+    cluster_endpoint = module.eks.cluster_endpoint
+  }
+}
