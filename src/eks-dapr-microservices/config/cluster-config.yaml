@@ -1,0 +1,50 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: ${CLUSTER_NAME}
+  region: ${AWS_REGION}
+  version: "1.31"
+
+autoModeConfig:
+  enabled: false
+
+vpc:
+  id: "${VPC_ID}"
+  subnets:
+    public:
+      ${AWS_REGION}a:
+        id: "${SUBNET_1_ID}"
+      ${AWS_REGION}b:
+        id: "${SUBNET_2_ID}"
+  clusterEndpoints:
+    publicAccess: true
+    privateAccess: false
+
+iam:
+  serviceRoleARN: ${EKS_CLUSTER_ROLE_ARN}
+  withOIDC: true
+
+managedNodeGroups:
+  - name: eks-lt-ng-public
+    instanceType: t3.medium
+    amiFamily: AmazonLinux2023
+    minSize: 2
+    maxSize: 2
+    desiredCapacity: 2
+    volumeSize: 20
+    volumeType: gp3
+    iam:
+      instanceRoleARN: ${EKS_NODE_ROLE_ARN}
+
+addons:
+  - name: vpc-cni
+    version: latest
+  - name: kube-proxy
+    version: latest
+  - name: coredns
+    version: latest
+  - name: eks-pod-identity-agent
+    version: latest
+  - name: amazon-cloudwatch-observability
+    version: latest

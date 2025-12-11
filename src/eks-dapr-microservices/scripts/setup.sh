@@ -2,11 +2,19 @@
 
 # EKS Dapr Microservices Setup Script
 # This script sets up the complete environment for the demo
+# Usage: ./setup.sh [--unattended]
 
 set -e
 
 echo "🚀 Starting EKS + Dapr Microservices Setup"
 echo "=========================================="
+
+# Check for unattended mode
+UNATTENDED=false
+if [ "$1" = "--unattended" ]; then
+    UNATTENDED=true
+    echo "🤖 Running in unattended mode (auto-yes to all prompts)"
+fi
 
 # Variables
 AWS_REGION="${AWS_REGION:-us-east-1}"
@@ -57,81 +65,14 @@ source /tmp/vpc-info.txt
 echo -e "${GREEN}✅ VPC ready${NC}"
 
 # Create EKS cluster if needed
-read -p "Do you want to create a new EKS cluster? (y/n): " create_cluster
+if [ "$UNATTENDED" = true ]; then
+    create_cluster="y"
+    echo "Do you want to create a new EKS cluster? (y/n): y [auto]"
+else
+    read -p "Do you want to create a new EKS cluster? (y/n): " create_cluster
+fi
 if [ "$create_cluster" = "y" ]; then
-    echo -e "\n${YELLOW}🏗️  Creating EKS cluster...${NC}"
-    
-    # Create cluster configuration file with all add-ons
-    cat > /tmp/cluster-config.yaml <<EOF
-apiVersion: eksctl.io/v1alpha5
-kind: ClusterConfig
-
-metadata:
-  name: $CLUSTER_NAME
-  region: $AWS_REGION
-  version: "1.31"
-
-autoModeConfig:
-  enabled: false
-
-vpc:
-  id: "$VPC_ID"
-  subnets:
-    public:
-      ${AWS_REGION}a:
-        id: "$SUBNET_1_ID"
-      ${AWS_REGION}b:
-        id: "$SUBNET_2_ID"
-  clusterEndpoints:
-    publicAccess: true
-    privateAccess: false
-
-iam:
-  serviceRoleARN: $EKS_CLUSTER_ROLE_ARN
-  withOIDC: true
-
-managedNodeGroups:
-  - name: eks-lt-ng-public
-    instanceType: t3.medium
-    amiFamily: AmazonLinux2
-    diskSize: 20
-    minSize: 1
-    maxSize: 3
-    desiredCapacity: 2
-    iam:
-      instanceRoleARN: $EKS_NODE_ROLE_ARN
-
-addons:
-  - name: vpc-cni
-    version: latest
-  - name: kube-proxy
-    version: latest
-  - name: coredns
-    version: latest
-  - name: eks-pod-identity-agent
-    version: latest
-  - name: amazon-cloudwatch-observability
-    version: latest
-EOF
-    
-    eksctl create cluster -f /tmp/cluster-config.yaml
-    
-    echo -e "\n${YELLOW}⏳ Waiting for cluster to be active...${NC}"
-    aws eks wait cluster-active --name $CLUSTER_NAME --region $AWS_REGION
-    
-    echo -e "\n${YELLOW}📦 Installing community add-ons...${NC}"
-    
-    # Install Metrics Server
-    echo -e "${YELLOW}📊 Installing Metrics Server...${NC}"
-    kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-    
-    # Install Fluent Bit
-    echo -e "${YELLOW}📝 Installing Fluent Bit...${NC}"
-    kubectl create namespace amazon-cloudwatch || true
-    kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluent-bit-quickstart.yaml || echo "⚠️  Fluent Bit installation skipped (may require CloudWatch setup)"
-    
-    rm -f /tmp/cluster-config.yaml
-    echo -e "${GREEN}✅ EKS cluster created with all add-ons${NC}"
+    ./scripts/create-cluster.sh "$CLUSTER_NAME" "$AWS_REGION" "$VPC_ID" "$SUBNET_1_ID" "$SUBNET_2_ID" "$EKS_CLUSTER_ROLE_ARN" "$EKS_NODE_ROLE_ARN"
 fi
 
 # Configure kubectl

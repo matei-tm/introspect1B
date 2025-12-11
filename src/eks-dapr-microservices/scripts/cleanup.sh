@@ -1,10 +1,18 @@
 #!/bin/bash
 
 # Cleanup script for EKS Dapr demo
+# Usage: ./cleanup.sh [--unattended]
 
 NAMESPACE="dapr-demo"
 CLUSTER_NAME="${CLUSTER_NAME:-dapr-demo-cluster}"
 AWS_REGION="${AWS_REGION:-us-east-1}"
+
+# Check for unattended mode
+UNATTENDED=false
+if [ "$1" = "--unattended" ]; then
+    UNATTENDED=true
+    echo "🤖 Running in unattended mode (auto-yes to all prompts)"
+fi
 
 echo "🧹 Cleaning up EKS Dapr Microservices Demo"
 echo "=========================================="
@@ -27,7 +35,12 @@ if kubectl cluster-info &>/dev/null; then
     kubectl delete namespace $NAMESPACE --ignore-not-found=true 2>/dev/null || true
 
     # Optionally delete Dapr
-    read -p "Do you want to uninstall Dapr? (y/n): " uninstall_dapr
+    if [ "$UNATTENDED" = true ]; then
+        uninstall_dapr="y"
+        echo "Do you want to uninstall Dapr? (y/n): y [auto]"
+    else
+        read -p "Do you want to uninstall Dapr? (y/n): " uninstall_dapr
+    fi
     if [ "$uninstall_dapr" = "y" ]; then
         echo "🗑️  Uninstalling Dapr..."
         helm uninstall dapr -n dapr-system 2>/dev/null || echo "⚠️  Dapr not found or already uninstalled"
@@ -41,7 +54,12 @@ else
 fi
 
 # Optionally delete EKS cluster
-read -p "Do you want to delete the EKS cluster? (y/n): " delete_cluster
+if [ "$UNATTENDED" = true ]; then
+    delete_cluster="y"
+    echo "Do you want to delete the EKS cluster? (y/n): y [auto]"
+else
+    read -p "Do you want to delete the EKS cluster? (y/n): " delete_cluster
+fi
 if [ "$delete_cluster" = "y" ]; then
     echo "🗑️  Deleting EKS cluster and node groups..."
     
@@ -93,7 +111,12 @@ if [ "$delete_cluster" = "y" ]; then
 fi
 
 # Optionally delete VPC
-read -p "Do you want to delete the VPC? (y/n): " delete_vpc
+if [ "$UNATTENDED" = true ]; then
+    delete_vpc="y"
+    echo "Do you want to delete the VPC? (y/n): y [auto]"
+else
+    read -p "Do you want to delete the VPC? (y/n): " delete_vpc
+fi
 if [ "$delete_vpc" = "y" ]; then
     echo "🗑️  Deleting VPC resources..."
     
