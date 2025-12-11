@@ -21,7 +21,7 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: Run Playwright tests
+      - name: Initialize the lab environment
         working-directory: src/labinit
         env:
           SITE_USER: ${{ secrets.SITE_USER }}
