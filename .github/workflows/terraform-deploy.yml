@@ -15,7 +15,6 @@ on:
   push:
     branches:
       - main
-      - redis-pubsub
     paths:
       - 'src/eks-dapr-microservices/terraform/**'
       - '.github/workflows/terraform-deploy.yml'
