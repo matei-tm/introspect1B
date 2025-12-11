@@ -85,20 +85,3 @@ resource "null_resource" "update_kubeconfig" {
   }
 }
 
-# Reference existing EKS Access Entry for current IAM user
-# Note: Access entry is created manually via AWS CLI or console
-# data source not available in current provider version, so we comment this out
-# and create the policy association directly
-
-# Associate EKS Cluster Admin Policy to the IAM user
-resource "aws_eks_access_policy_association" "admin_user_policy" {
-  cluster_name  = module.eks.cluster_name
-  principal_arn = data.aws_caller_identity.current.arn
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-
-  access_scope {
-    type = "cluster"
-  }
-
-  depends_on = [module.eks]
-}
