@@ -1,7 +1,7 @@
 {
-  "name": "publisher-service",
+  "name": "product-service",
   "version": "1.0.0",
-  "description": "Publisher microservice for EKS Dapr demo",
+  "description": "Product microservice for EKS Dapr demo",
   "main": "app.js",
   "scripts": {
     "start": "node app.js"

@@ -13,7 +13,7 @@ let messageCount = 0;
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'healthy', service: 'publisher' });
+  res.status(200).json({ status: 'healthy', service: 'product' });
 });
 
 // Endpoint to publish messages

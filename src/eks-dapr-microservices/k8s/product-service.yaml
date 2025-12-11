@@ -1,14 +1,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: publisher
+  name: product
   namespace: dapr-demo
   labels:
-    app: publisher
+    app: product
 spec:
   type: ClusterIP
   selector:
-    app: publisher
+    app: product
   ports:
   - port: 80
     targetPort: 3000
