@@ -18,6 +18,9 @@ module "vpc" {
   enable_dns_hostnames = true
   enable_dns_support   = true
 
+  # Enable auto-assign public IP for public subnets
+  map_public_ip_on_launch = true
+
   public_subnet_tags = {
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
     "kubernetes.io/role/elb"                    = "1"

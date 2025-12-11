@@ -10,6 +10,10 @@ module "eks" {
   subnet_ids                     = module.vpc.public_subnets
   cluster_endpoint_public_access = true
 
+  # Disable KMS encryption to avoid permission issues in lab environment
+  create_kms_key = false
+  cluster_encryption_config = {}
+
   # Enable IRSA (IAM Roles for Service Accounts)
   enable_irsa = true
 
