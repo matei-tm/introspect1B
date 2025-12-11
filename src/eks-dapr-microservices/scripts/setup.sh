@@ -134,14 +134,14 @@ echo -e "\n${YELLOW}🏗️  Building Docker images...${NC}"
 
 # Product service
 cd product-service
-docker build -t product-service:latest .
+docker build --platform linux/amd64 -t product-service:latest .
 docker tag product-service:latest $ECR_REGISTRY/product-service:latest
 docker push $ECR_REGISTRY/product-service:latest
 cd ..
 
 # Order service
 cd order-service
-docker build -t order-service:latest .
+docker build --platform linux/amd64 -t order-service:latest .
 docker tag order-service:latest $ECR_REGISTRY/order-service:latest
 docker push $ECR_REGISTRY/order-service:latest
 cd ..

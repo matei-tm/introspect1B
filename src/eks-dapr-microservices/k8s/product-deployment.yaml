@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: product
-        image: <YOUR_ECR_REGISTRY>/product-service:latest
+        image: 322230759107.dkr.ecr.us-east-1.amazonaws.com/product-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3000

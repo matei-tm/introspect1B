@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: order
-        image: <YOUR_ECR_REGISTRY>/order-service:latest
+        image: 322230759107.dkr.ecr.us-east-1.amazonaws.com/order-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3001
