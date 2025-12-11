@@ -268,7 +268,7 @@ You should see:
 #### 4. Check Dapr Sidecars
 
 ```bash
-kubectl logs deployment/publisher -n dapr-demo -c daprd --tail=20
+kubectl logs deployment/product -n dapr-demo -c daprd --tail=20
 ```
 
 #### 5. Verify Dapr Components
@@ -292,10 +292,10 @@ Watch both services simultaneously:
 
 ```bash
 # Terminal 1 - Publisher
-kubectl logs -f deployment/publisher -n dapr-demo -c publisher
+kubectl logs -f deployment/product -n dapr-demo -c product
 
 # Terminal 2 - Subscriber  
-kubectl logs -f deployment/subscriber -n dapr-demo -c subscriber
+kubectl logs -f deployment/order -n dapr-demo -c order
 ```
 
 ### Method 2: Port Forwarding

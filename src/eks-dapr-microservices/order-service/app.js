@@ -5,7 +5,12 @@ const PORT = process.env.PORT || 3001;
 const PUBSUB_NAME = 'messagepubsub';
 const TOPIC_NAME = 'orders';
 
-app.use(express.json());
+// Configure body parsers with increased limits
+app.use(express.json({ limit: '10mb' }));
+app.use(express.text({ type: 'text/plain', limit: '10mb' }));
+app.use(express.raw({ type: 'application/octet-stream', limit: '10mb' }));
+// Add CloudEvents JSON parser
+app.use(express.json({ type: 'application/cloudevents+json', limit: '10mb' }));
 
 let receivedMessages = [];
 let messageCount = 0;
@@ -33,6 +38,7 @@ app.get('/dapr/subscribe', (req, res) => {
 // Handler for incoming messages from Dapr
 app.post('/orders', (req, res) => {
   try {
+    // Extract data from CloudEvents format (req.body.data) or use body directly
     const order = req.body.data || req.body;
     messageCount++;
     
