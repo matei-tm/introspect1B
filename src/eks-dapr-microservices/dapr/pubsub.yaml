@@ -17,5 +17,5 @@ spec:
   - name: enableTLS
     value: "false"
 scopes:
-  - publisher
-  - subscriber
+  - product
+  - order

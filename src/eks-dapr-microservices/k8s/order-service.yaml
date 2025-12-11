@@ -1,14 +1,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: subscriber
+  name: order
   namespace: dapr-demo
   labels:
-    app: subscriber
+    app: order
 spec:
   type: ClusterIP
   selector:
-    app: subscriber
+    app: order
   ports:
   - port: 80
     targetPort: 3001

@@ -177,8 +177,8 @@ if [ -z "$ECR_REGISTRY" ]; then
     ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
     
     # Create ECR repositories
-    aws ecr create-repository --repository-name publisher-service --region $AWS_REGION || true
-    aws ecr create-repository --repository-name subscriber-service --region $AWS_REGION || true
+    aws ecr create-repository --repository-name product-service --region $AWS_REGION || true
+    aws ecr create-repository --repository-name order-service --region $AWS_REGION || true
     
     echo -e "${GREEN}✅ ECR repositories ready${NC}"
 fi
@@ -191,26 +191,26 @@ echo -e "${GREEN}✅ Logged into ECR${NC}"
 # Build and push Docker images
 echo -e "\n${YELLOW}🏗️  Building Docker images...${NC}"
 
-# Publisher service
-cd publisher-service
-docker build -t publisher-service:latest .
-docker tag publisher-service:latest $ECR_REGISTRY/publisher-service:latest
-docker push $ECR_REGISTRY/publisher-service:latest
+# Product service
+cd product-service
+docker build -t product-service:latest .
+docker tag product-service:latest $ECR_REGISTRY/product-service:latest
+docker push $ECR_REGISTRY/product-service:latest
 cd ..
 
-# Subscriber service
-cd subscriber-service
-docker build -t subscriber-service:latest .
-docker tag subscriber-service:latest $ECR_REGISTRY/subscriber-service:latest
-docker push $ECR_REGISTRY/subscriber-service:latest
+# Order service
+cd order-service
+docker build -t order-service:latest .
+docker tag order-service:latest $ECR_REGISTRY/order-service:latest
+docker push $ECR_REGISTRY/order-service:latest
 cd ..
 
 echo -e "${GREEN}✅ Docker images built and pushed${NC}"
 
 # Update Kubernetes manifests with ECR registry
 echo -e "\n${YELLOW}📝 Updating Kubernetes manifests...${NC}"
-sed -i.bak "s|<YOUR_ECR_REGISTRY>|$ECR_REGISTRY|g" k8s/publisher-deployment.yaml
-sed -i.bak "s|<YOUR_ECR_REGISTRY>|$ECR_REGISTRY|g" k8s/subscriber-deployment.yaml
+sed -i.bak "s|<YOUR_ECR_REGISTRY>|$ECR_REGISTRY|g" k8s/product-deployment.yaml
+sed -i.bak "s|<YOUR_ECR_REGISTRY>|$ECR_REGISTRY|g" k8s/order-deployment.yaml
 rm -f k8s/*.bak
 
 # Deploy to Kubernetes
@@ -229,8 +229,8 @@ echo -e "${GREEN}✅ Applications deployed${NC}"
 
 # Wait for deployments
 echo -e "\n${YELLOW}⏳ Waiting for deployments to be ready...${NC}"
-kubectl wait --for=condition=available --timeout=300s deployment/publisher -n $NAMESPACE
-kubectl wait --for=condition=available --timeout=300s deployment/subscriber -n $NAMESPACE
+kubectl wait --for=condition=available --timeout=300s deployment/product -n $NAMESPACE
+kubectl wait --for=condition=available --timeout=300s deployment/order -n $NAMESPACE
 
 echo -e "${GREEN}✅ All deployments ready${NC}"
 
@@ -240,9 +240,9 @@ kubectl get all -n $NAMESPACE
 
 echo -e "\n${GREEN}🎉 Setup complete!${NC}"
 echo -e "\n${YELLOW}📝 Next steps:${NC}"
-echo "1. View logs: kubectl logs -f deployment/publisher -n $NAMESPACE -c publisher"
-echo "2. View subscriber logs: kubectl logs -f deployment/subscriber -n $NAMESPACE -c subscriber"
-echo "3. Check Dapr sidecars: kubectl logs -f deployment/publisher -n $NAMESPACE -c daprd"
-echo "4. Port-forward to test: kubectl port-forward svc/publisher 8080:80 -n $NAMESPACE"
+echo "1. View logs: kubectl logs -f deployment/product -n $NAMESPACE -c product"
+echo "2. View order logs: kubectl logs -f deployment/order -n $NAMESPACE -c order"
+echo "3. Check Dapr sidecars: kubectl logs -f deployment/product -n $NAMESPACE -c daprd"
+echo "4. Port-forward to test: kubectl port-forward svc/product 8080:80 -n $NAMESPACE"
 echo -e "\n${YELLOW}🧹 To cleanup:${NC}"
 echo "./scripts/cleanup.sh"

@@ -14,7 +14,7 @@ let messageCount = 0;
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'healthy', 
-    service: 'subscriber',
+    service: 'order',
     messagesReceived: messageCount
   });
 });
@@ -76,7 +76,7 @@ app.get('/messages', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Subscriber service listening on port ${PORT}`);
+  console.log(`🚀 Order service listening on port ${PORT}`);
   console.log(`👂 Subscribed to topic: ${TOPIC_NAME}`);
   console.log(`📡 Dapr will send messages to /orders endpoint`);
 });

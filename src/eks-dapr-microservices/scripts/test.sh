@@ -15,19 +15,19 @@ kubectl get pods -n $NAMESPACE
 echo -e "\n🔧 Dapr Components:"
 kubectl get components -n $NAMESPACE
 
-# Get publisher logs
-echo -e "\n📝 Recent Publisher Logs:"
-kubectl logs -n $NAMESPACE deployment/publisher -c publisher --tail=10
+# Get product logs
+echo -e "\n📝 Recent Product Logs:"
+kubectl logs -n $NAMESPACE deployment/product -c product --tail=10
 
-# Get subscriber logs
-echo -e "\n📝 Recent Subscriber Logs:"
-kubectl logs -n $NAMESPACE deployment/subscriber -c subscriber --tail=10
+# Get order logs
+echo -e "\n📝 Recent Order Logs:"
+kubectl logs -n $NAMESPACE deployment/order -c order --tail=10
 
 # Get Dapr sidecar logs
-echo -e "\n📡 Publisher Dapr Sidecar Logs:"
-kubectl logs -n $NAMESPACE deployment/publisher -c daprd --tail=10
+echo -e "\n📡 Product Dapr Sidecar Logs:"
+kubectl logs -n $NAMESPACE deployment/product -c daprd --tail=10
 
 echo -e "\n✅ Test complete!"
 echo -e "\n💡 To follow logs in real-time:"
-echo "   Publisher: kubectl logs -f -n $NAMESPACE deployment/publisher -c publisher"
-echo "   Subscriber: kubectl logs -f -n $NAMESPACE deployment/subscriber -c subscriber"
+echo "   Product: kubectl logs -f -n $NAMESPACE deployment/product -c product"
+echo "   Order: kubectl logs -f -n $NAMESPACE deployment/order -c order"

@@ -1,7 +1,7 @@
 {
-  "name": "subscriber-service",
+  "name": "order-service",
   "version": "1.0.0",
-  "description": "Subscriber microservice for EKS Dapr demo",
+  "description": "Order microservice for EKS Dapr demo",
   "main": "app.js",
   "scripts": {
     "start": "node app.js"

@@ -19,5 +19,5 @@ spec:
   - name: actorStateStore
     value: "true"
 scopes:
-  - publisher
-  - subscriber
+  - product
+  - order
