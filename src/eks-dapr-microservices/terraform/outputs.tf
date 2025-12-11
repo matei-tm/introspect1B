@@ -59,6 +59,11 @@ output "dapr_service_account_role_arn" {
   value       = aws_iam_role.dapr_service_account.arn
 }
 
+output "eks_full_admin_access_policy_arn" {
+  description = "ARN of the EKS full admin access policy"
+  value       = aws_iam_policy.eks_full_admin_access.arn
+}
+
 output "ec2_instance_type_access_policy_arn" {
   description = "ARN of the EC2 instance type access policy"
   value       = aws_iam_policy.ec2_instance_type_access.arn

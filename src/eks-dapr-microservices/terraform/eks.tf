@@ -1,7 +1,7 @@
 # EKS Cluster Module
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.0"
+  version = "~> 20.0"
 
   cluster_name    = var.cluster_name
   cluster_version = var.kubernetes_version
@@ -23,8 +23,16 @@ module "eks" {
       max_size     = var.node_max_size
       desired_size = var.node_desired_capacity
 
-      disk_size = 20
-      disk_type = "gp3"
+      block_device_mappings = {
+        xvda = {
+          device_name = "/dev/xvda"
+          ebs = {
+            volume_size           = 20
+            volume_type           = "gp3"
+            delete_on_termination = true
+          }
+        }
+      }
 
       ami_type = "AL2023_x86_64_STANDARD"
 
@@ -39,9 +47,6 @@ module "eks" {
     }
   }
 
-  # Cluster access entry
-#   enable_cluster_creator_admin_permissions = true
-
   # Add-ons
   cluster_addons = {
     coredns = {
@@ -54,9 +59,6 @@ module "eks" {
       most_recent = true
     }
     eks-pod-identity-agent = {
-      most_recent = true
-    }
-    amazon-cloudwatch-observability = {
       most_recent = true
     }
   }
