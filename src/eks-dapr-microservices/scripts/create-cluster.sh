@@ -44,7 +44,11 @@ echo "📦 Installing community add-ons..."
 
 # Install Metrics Server
 echo "📊 Installing Metrics Server..."
-kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+if kubectl get deployment metrics-server -n kube-system &>/dev/null; then
+    echo "✅ Metrics Server already installed, skipping..."
+else
+    kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml || echo "⚠️  Metrics Server installation failed (may already exist)"
+fi
 
 # Install Fluent Bit
 echo "📝 Installing Fluent Bit..."

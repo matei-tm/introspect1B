@@ -1,0 +1,32 @@
+# AWS Configuration
+aws_region   = "us-east-1"
+cluster_name = "dapr-demo-cluster"
+environment  = "dev"
+
+# VPC Configuration
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_1_cidr = "10.0.1.0/24"
+public_subnet_2_cidr = "10.0.2.0/24"
+
+# EKS Configuration
+kubernetes_version      = "1.31"
+node_instance_type      = "t3.medium"
+node_desired_capacity   = 2
+node_min_size          = 1
+node_max_size          = 3
+
+# Dapr Configuration
+dapr_version = "1.12"
+
+# Application Configuration
+namespace = "dapr-demo"
+
+# ECR Repositories
+ecr_repository_names = ["product-service", "order-service"]
+
+# AWS Resources
+sns_topic_name       = "orders"
+dynamodb_table_name  = "dapr-state-table"
+
+# IAM Configuration
+attach_ec2_policy_to_current_user = true
