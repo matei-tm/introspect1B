@@ -9,7 +9,8 @@ resource "kubernetes_namespace" "dapr_demo" {
 
   depends_on = [
     module.eks,
-    null_resource.update_kubeconfig
+    null_resource.update_kubeconfig,
+    time_sleep.wait_for_access_policy
   ]
 }
 
@@ -25,6 +26,7 @@ resource "kubernetes_service_account" "dapr" {
 
   depends_on = [
     module.eks,
-    null_resource.update_kubeconfig
+    null_resource.update_kubeconfig,
+    time_sleep.wait_for_access_policy
   ]
 }

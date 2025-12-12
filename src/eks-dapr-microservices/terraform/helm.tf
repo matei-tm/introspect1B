@@ -19,7 +19,8 @@ resource "helm_release" "dapr" {
 
   depends_on = [
     module.eks,
-    null_resource.update_kubeconfig
+    null_resource.update_kubeconfig,
+    time_sleep.wait_for_access_policy
   ]
 }
 
@@ -38,6 +39,7 @@ resource "helm_release" "metrics_server" {
 
   depends_on = [
     module.eks,
-    null_resource.update_kubeconfig
+    null_resource.update_kubeconfig,
+    time_sleep.wait_for_access_policy
   ]
 }

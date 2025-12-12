@@ -72,19 +72,6 @@ module "eks" {
   }
 }
 
-# Update kubeconfig after cluster is created
-resource "null_resource" "update_kubeconfig" {
-  depends_on = [module.eks]
-
-  provisioner "local-exec" {
-    command = "aws eks update-kubeconfig --region ${var.aws_region} --name ${module.eks.cluster_name}"
-  }
-
-  triggers = {
-    cluster_endpoint = module.eks.cluster_endpoint
-  }
-}
-
 # Create EKS access entry for current IAM user
 resource "aws_eks_access_entry" "admin_user" {
   cluster_name      = module.eks.cluster_name
@@ -105,5 +92,26 @@ resource "aws_eks_access_policy_association" "admin_user_policy" {
   }
 
   depends_on = [aws_eks_access_entry.admin_user]
+}
+
+# Wait for access policy to propagate
+resource "time_sleep" "wait_for_access_policy" {
+  create_duration = "30s"
+
+  depends_on = [aws_eks_access_policy_association.admin_user_policy]
+}
+
+# Update kubeconfig after access is granted
+resource "null_resource" "update_kubeconfig" {
+  depends_on = [time_sleep.wait_for_access_policy]
+
+  provisioner "local-exec" {
+    command = "aws eks update-kubeconfig --region ${var.aws_region} --name ${module.eks.cluster_name}"
+  }
+
+  triggers = {
+    cluster_endpoint = module.eks.cluster_endpoint
+    access_policy    = aws_eks_access_policy_association.admin_user_policy.id
+  }
 }
 
