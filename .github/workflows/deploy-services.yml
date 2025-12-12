@@ -11,15 +11,7 @@ on:
           - all
           - product-service
           - order-service
-  push:
-    branches:
-      - main
-      - redis-pubsub
-    paths:
-      - 'src/eks-dapr-microservices/product-service/**'
-      - 'src/eks-dapr-microservices/order-service/**'
-      - 'src/eks-dapr-microservices/k8s/**'
-      - '.github/workflows/deploy-services.yml'
+
 
 env:
   AWS_REGION: us-east-1

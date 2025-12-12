@@ -12,12 +12,7 @@ on:
           - plan
           - apply
           - destroy
-  push:
-    branches:
-      - main
-    paths:
-      - 'src/eks-dapr-microservices/terraform/**'
-      - '.github/workflows/terraform-deploy.yml'
+
 
 env:
   AWS_REGION: us-east-1
