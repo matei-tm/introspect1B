@@ -1,14 +1,16 @@
 # EKS Dapr Microservices Demo
 
-A complete demonstration of containerized microservices deployed on Amazon EKS with Dapr sidecars implementing pub/sub messaging patterns for real-time event-driven interactions.
+A complete demonstration of containerized microservices deployed on Amazon EKS with Dapr sidecars implementing pub/sub messaging patterns using AWS SNS/SQS for real-time event-driven interactions.
 
 ## 📋 Overview
 
 This project demonstrates:
 - **Amazon EKS**: Managed Kubernetes cluster for container orchestration
 - **Dapr**: Distributed Application Runtime for microservices
-- **Pub/Sub Messaging**: Event-driven communication between services
-- **Redis**: Message broker for Dapr pub/sub component
+- **Pub/Sub Messaging**: Event-driven communication between services using AWS SNS/SQS
+- **AWS SNS/SQS**: Native AWS messaging services for pub/sub
+- **AWS DynamoDB**: State store for Dapr
+- **IRSA**: IAM Roles for Service Accounts for secure AWS access
 - **Real-time Observability**: Live monitoring of message flows
 
 ## 🏗️ Architecture
@@ -456,21 +458,70 @@ Each pod contains two containers:
 ## 🎯 Lab Objectives Met
 
 ✅ **Deploy containerized microservices on Amazon EKS**
-- Publisher and subscriber services containerized with Docker
-- Deployed to managed EKS cluster
+- Product and order services containerized with Docker
+- Deployed to managed EKS cluster with Terraform
 
 ✅ **Implement Dapr sidecars**
-- Dapr sidecar injected into each pod via annotations
-- Handles all pub/sub communication
+- Dapr sidecar manually injected into each pod
+- Handles all pub/sub communication via AWS SNS/SQS
 
 ✅ **Pub/Sub messaging pattern**
-- Redis-backed pub/sub component
+- AWS SNS/SQS-backed pub/sub component
 - Real-time event publishing and subscription
+- CloudEvents format for message delivery
 
 ✅ **Observe real-time interactions**
 - Live log streaming shows message flow
-- Multiple subscriber replicas demonstrate load distribution
-- Health endpoints provide status visibility
+- Multiple order replicas demonstrate load distribution
+- IRSA provides secure AWS access
+
+## ✅ Verification
+
+Check the services are working:
+
+```bash
+kubectl logs -n dapr-demo -l app=product -c product --tail=10 && echo "---ORDER SERVICE---" && kubectl logs -n dapr-demo -l app=order -c order --tail=10
+```
+
+**Expected output:**
+
+```text
+  timestamp: '2025-12-12T02:29:45.977Z'
+}
+✅ Published order: order-1765506590978-44 {
+  orderId: 'order-1765506590978-44',
+  customerId: 'customer-277',
+  product: 'laptop',
+  quantity: 5,
+  totalAmount: '402.29',
+  timestamp: '2025-12-12T02:29:50.978Z'
+}
+---ORDER SERVICE---
+
+> order-service@1.0.0 start
+> node app.js
+
+🚀 Order service listening on port 3001
+👂 Subscribed to topic: orders
+📡 Dapr will send messages to /orders endpoint
+📋 Subscription configuration requested
+}
+✅ Order order-1765506590978-44 processed successfully
+
+📦 [27] Received order: {
+  orderId: 'order-1765506595980-45',
+  product: 'phone',
+  quantity: 1,
+  amount: '162.09',
+  timestamp: '2025-12-12T02:29:55.980Z'
+}
+```
+
+This shows:
+- ✅ **Product service** publishing messages to AWS SNS
+- ✅ **Order service** receiving messages from AWS SQS
+- ✅ **End-to-end flow** working through AWS native services
+
 
 ## 📝 License
 
