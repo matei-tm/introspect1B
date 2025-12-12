@@ -114,7 +114,10 @@ data "aws_iam_policy_document" "dapr_service_account" {
       "sns:CreateTopic",
       "sns:DeleteTopic",
       "sns:ListTopics",
-      "sns:GetTopicAttributes"
+      "sns:GetTopicAttributes",
+      "sns:TagResource",
+      "sns:UntagResource",
+      "sns:ListSubscriptionsByTopic"
     ]
     resources = ["*"]
   }

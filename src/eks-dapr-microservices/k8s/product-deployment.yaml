@@ -22,6 +22,7 @@ spec:
         dapr.io/enable-metrics: "true"
         dapr.io/metrics-port: "9090"
     spec:
+      serviceAccountName: dapr-service-account
       containers:
       - name: product
         image: 322230759107.dkr.ecr.us-east-1.amazonaws.com/product-service:latest
@@ -53,3 +54,77 @@ spec:
             port: 3000
           initialDelaySeconds: 5
           periodSeconds: 5
+      - name: daprd
+        image: daprio/daprd:1.12.5
+        command:
+        - "/daprd"
+        args:
+        - "--app-id"
+        - "product"
+        - "--app-port"
+        - "3000"
+        - "--components-path"
+        - "/components"
+        - "--dapr-http-port"
+        - "3500"
+        - "--dapr-grpc-port"
+        - "50001"
+        - "--dapr-internal-grpc-port"
+        - "50002"
+        - "--dapr-listen-addresses"
+        - "0.0.0.0"
+        - "--dapr-public-port"
+        - "3501"
+        - "--app-protocol"
+        - "http"
+        - "--placement-host-address"
+        - "dapr-placement-server.dapr-system.svc.cluster.local:50005"
+        - "--log-level"
+        - "info"
+        - "--app-max-concurrency"
+        - "-1"
+        - "--enable-metrics"
+        - "--metrics-port"
+        - "9090"
+        - "--dapr-http-max-request-size"
+        - "-1"
+        - "--dapr-http-read-buffer-size"
+        - "-1"
+        - "--enable-api-logging"
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        ports:
+        - containerPort: 3500
+          name: dapr-http
+          protocol: TCP
+        - containerPort: 50001
+          name: dapr-grpc
+          protocol: TCP
+        - containerPort: 9090
+          name: dapr-metrics
+          protocol: TCP
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: dapr-config
+          mountPath: /dapr/config
+          readOnly: true
+        - name: dapr-components
+          mountPath: /components
+          readOnly: true
+      volumes:
+      - name: dapr-config
+        configMap:
+          name: dapr-config
+          optional: true
+      - name: dapr-components
+        configMap:
+          name: dapr-components

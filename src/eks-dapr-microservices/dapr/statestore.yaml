@@ -1,23 +1,23 @@
-# Dapr State Store Component using Redis
+# Dapr State Store Component using AWS DynamoDB
 apiVersion: dapr.io/v1alpha1
 kind: Component
 metadata:
   name: statestore
   namespace: dapr-demo
 spec:
-  type: state.redis
+  type: state.aws.dynamodb
   version: v1
   metadata:
-  - name: redisHost
-    value: redis-master.dapr-demo.svc.cluster.local:6379
-  - name: redisPassword
-    secretKeyRef:
-      name: redis
-      key: redis-password
-  - name: enableTLS
-    value: "false"
-  - name: actorStateStore
-    value: "true"
+  - name: table
+    value: "dapr-state-table"
+  - name: region
+    value: "us-east-1"
+  - name: accessKey
+    value: ""
+  - name: secretKey
+    value: ""
+  - name: sessionToken
+    value: ""
 scopes:
   - product
   - order

@@ -1,21 +1,25 @@
-# Dapr Pub/Sub Component using Redis
+# Dapr Pub/Sub Component using AWS SNS/SQS
 apiVersion: dapr.io/v1alpha1
 kind: Component
 metadata:
   name: messagepubsub
   namespace: dapr-demo
 spec:
-  type: pubsub.redis
+  type: pubsub.aws.snssqs
   version: v1
   metadata:
-  - name: redisHost
-    value: redis-master.dapr-demo.svc.cluster.local:6379
-  - name: redisPassword
-    secretKeyRef:
-      name: redis
-      key: redis-password
-  - name: enableTLS
-    value: "false"
+  - name: region
+    value: "us-east-1"
+  - name: accessKey
+    value: ""
+  - name: secretKey
+    value: ""
+  - name: sessionToken
+    value: ""
+  - name: disableEntityManagement
+    value: "true"
+  - name: assetsManagementTimeoutSeconds
+    value: "5"
 scopes:
-  - product
-  - order
+- product
+- order

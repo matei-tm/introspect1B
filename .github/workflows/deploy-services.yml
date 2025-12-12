@@ -37,33 +37,49 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Determine services to deploy
         id: check
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             SERVICE="${{ github.event.inputs.service }}"
+            echo "Manual dispatch with service: $SERVICE"
             if [[ "$SERVICE" == "all" ]] || [[ "$SERVICE" == "product-service" ]]; then
               echo "deploy-product=true" >> $GITHUB_OUTPUT
+              echo "✅ Product service will be deployed"
             else
               echo "deploy-product=false" >> $GITHUB_OUTPUT
+              echo "⏭️ Product service skipped"
             fi
             if [[ "$SERVICE" == "all" ]] || [[ "$SERVICE" == "order-service" ]]; then
               echo "deploy-order=true" >> $GITHUB_OUTPUT
+              echo "✅ Order service will be deployed"
             else
               echo "deploy-order=false" >> $GITHUB_OUTPUT
+              echo "⏭️ Order service skipped"
             fi
           else
             # For push events, check which files changed
-            if git diff --name-only HEAD^ HEAD | grep -q "src/eks-dapr-microservices/product-service\|src/eks-dapr-microservices/k8s/product"; then
+            echo "Push event detected, checking changed files..."
+            CHANGED_FILES=$(git diff --name-only HEAD^ HEAD 2>/dev/null || echo "all")
+            echo "Changed files: $CHANGED_FILES"
+            
+            if echo "$CHANGED_FILES" | grep -q "src/eks-dapr-microservices/product-service\|src/eks-dapr-microservices/k8s/product" || [[ "$CHANGED_FILES" == "all" ]]; then
               echo "deploy-product=true" >> $GITHUB_OUTPUT
+              echo "✅ Product service will be deployed"
             else
               echo "deploy-product=false" >> $GITHUB_OUTPUT
+              echo "⏭️ Product service skipped (no changes)"
             fi
-            if git diff --name-only HEAD^ HEAD | grep -q "src/eks-dapr-microservices/order-service\|src/eks-dapr-microservices/k8s/order"; then
+            
+            if echo "$CHANGED_FILES" | grep -q "src/eks-dapr-microservices/order-service\|src/eks-dapr-microservices/k8s/order" || [[ "$CHANGED_FILES" == "all" ]]; then
               echo "deploy-order=true" >> $GITHUB_OUTPUT
+              echo "✅ Order service will be deployed"
             else
               echo "deploy-order=false" >> $GITHUB_OUTPUT
+              echo "⏭️ Order service skipped (no changes)"
             fi
           fi
 
@@ -93,8 +109,8 @@ jobs:
           ECR_REPOSITORY: product-service
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          echo "Building product-service Docker image..."
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          echo "Building product-service Docker image for linux/amd64..."
+          docker build --platform linux/amd64 -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
           
           echo "Pushing product-service Docker image to ECR..."
@@ -159,8 +175,8 @@ jobs:
           ECR_REPOSITORY: order-service
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          echo "Building order-service Docker image..."
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          echo "Building order-service Docker image for linux/amd64..."
+          docker build --platform linux/amd64 -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
           
           echo "Pushing order-service Docker image to ECR..."
