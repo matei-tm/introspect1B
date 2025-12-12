@@ -45,8 +45,8 @@ output "sns_topic_arn" {
 }
 
 output "sqs_queue_url" {
-  description = "URL of the SQS queue"
-  value       = aws_sqs_queue.orders_order.url
+  description = "URL of the SQS queue for order service"
+  value       = aws_sqs_queue.orders_subscriber.url
 }
 
 output "dynamodb_table_name" {
