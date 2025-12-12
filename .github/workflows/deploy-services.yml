@@ -1,0 +1,240 @@
+name: Build and Deploy Microservices
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Service to deploy'
+        required: true
+        type: choice
+        options:
+          - all
+          - product-service
+          - order-service
+  push:
+    branches:
+      - main
+      - redis-pubsub
+    paths:
+      - 'src/eks-dapr-microservices/product-service/**'
+      - 'src/eks-dapr-microservices/order-service/**'
+      - 'src/eks-dapr-microservices/k8s/**'
+      - '.github/workflows/deploy-services.yml'
+
+env:
+  AWS_REGION: us-east-1
+  EKS_CLUSTER_NAME: dapr-demo-cluster
+  ECR_REGISTRY: 322230759107.dkr.ecr.us-east-1.amazonaws.com
+  NAMESPACE: dapr-demo
+
+jobs:
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    outputs:
+      deploy-product: ${{ steps.check.outputs.deploy-product }}
+      deploy-order: ${{ steps.check.outputs.deploy-order }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine services to deploy
+        id: check
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            SERVICE="${{ github.event.inputs.service }}"
+            if [[ "$SERVICE" == "all" ]] || [[ "$SERVICE" == "product-service" ]]; then
+              echo "deploy-product=true" >> $GITHUB_OUTPUT
+            else
+              echo "deploy-product=false" >> $GITHUB_OUTPUT
+            fi
+            if [[ "$SERVICE" == "all" ]] || [[ "$SERVICE" == "order-service" ]]; then
+              echo "deploy-order=true" >> $GITHUB_OUTPUT
+            else
+              echo "deploy-order=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            # For push events, check which files changed
+            if git diff --name-only HEAD^ HEAD | grep -q "src/eks-dapr-microservices/product-service\|src/eks-dapr-microservices/k8s/product"; then
+              echo "deploy-product=true" >> $GITHUB_OUTPUT
+            else
+              echo "deploy-product=false" >> $GITHUB_OUTPUT
+            fi
+            if git diff --name-only HEAD^ HEAD | grep -q "src/eks-dapr-microservices/order-service\|src/eks-dapr-microservices/k8s/order"; then
+              echo "deploy-order=true" >> $GITHUB_OUTPUT
+            else
+              echo "deploy-order=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+  build-and-deploy-product:
+    name: Build and Deploy Product Service
+    needs: setup
+    if: needs.setup.outputs.deploy-product == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push product-service image to Amazon ECR
+        working-directory: src/eks-dapr-microservices/product-service
+        env:
+          ECR_REPOSITORY: product-service
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "Building product-service Docker image..."
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          
+          echo "Pushing product-service Docker image to ECR..."
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          echo "✅ Product service image pushed: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+          kubectl cluster-info
+
+      - name: Deploy Dapr components (if needed)
+        working-directory: src/eks-dapr-microservices
+        run: |
+          echo "Applying Dapr components..."
+          kubectl apply -f dapr/ -n ${{ env.NAMESPACE }} || echo "Dapr components already exist or error occurred"
+
+      - name: Deploy product-service to EKS
+        working-directory: src/eks-dapr-microservices/k8s
+        run: |
+          echo "Deploying product-service..."
+          kubectl apply -f product-service.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f product-deployment.yaml -n ${{ env.NAMESPACE }}
+          
+          echo "Waiting for product-service rollout..."
+          kubectl rollout status deployment/product -n ${{ env.NAMESPACE }} --timeout=5m
+          
+          echo "✅ Product service deployed successfully"
+
+      - name: Verify product-service deployment
+        run: |
+          echo "Checking product-service pods..."
+          kubectl get pods -n ${{ env.NAMESPACE }} -l app=product
+          kubectl describe deployment/product -n ${{ env.NAMESPACE }}
+
+  build-and-deploy-order:
+    name: Build and Deploy Order Service
+    needs: setup
+    if: needs.setup.outputs.deploy-order == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push order-service image to Amazon ECR
+        working-directory: src/eks-dapr-microservices/order-service
+        env:
+          ECR_REPOSITORY: order-service
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "Building order-service Docker image..."
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          
+          echo "Pushing order-service Docker image to ECR..."
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          echo "✅ Order service image pushed: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+          kubectl cluster-info
+
+      - name: Deploy Dapr components (if needed)
+        working-directory: src/eks-dapr-microservices
+        run: |
+          echo "Applying Dapr components..."
+          kubectl apply -f dapr/ -n ${{ env.NAMESPACE }} || echo "Dapr components already exist or error occurred"
+
+      - name: Deploy order-service to EKS
+        working-directory: src/eks-dapr-microservices/k8s
+        run: |
+          echo "Deploying order-service..."
+          kubectl apply -f order-service.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f order-deployment.yaml -n ${{ env.NAMESPACE }}
+          
+          echo "Waiting for order-service rollout..."
+          kubectl rollout status deployment/order -n ${{ env.NAMESPACE }} --timeout=5m
+          
+          echo "✅ Order service deployed successfully"
+
+      - name: Verify order-service deployment
+        run: |
+          echo "Checking order-service pods..."
+          kubectl get pods -n ${{ env.NAMESPACE }} -l app=order
+          kubectl describe deployment/order -n ${{ env.NAMESPACE }}
+
+  summary:
+    name: Deployment Summary
+    needs: [setup, build-and-deploy-product, build-and-deploy-order]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Services Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.setup.outputs.deploy-product }}" == "true" ]]; then
+            if [[ "${{ needs.build-and-deploy-product.result }}" == "success" ]]; then
+              echo "✅ **Product Service**: Deployed successfully" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Product Service**: Deployment failed" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⏭️ **Product Service**: Skipped (no changes)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.setup.outputs.deploy-order }}" == "true" ]]; then
+            if [[ "${{ needs.build-and-deploy-order.result }}" == "success" ]]; then
+              echo "✅ **Order Service**: Deployed successfully" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Order Service**: Deployment failed" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⏭️ **Order Service**: Skipped (no changes)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Deployment Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cluster**: ${{ env.EKS_CLUSTER_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Region**: ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Namespace**: ${{ env.NAMESPACE }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
