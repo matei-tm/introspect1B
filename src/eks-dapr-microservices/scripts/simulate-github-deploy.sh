@@ -11,7 +11,7 @@ NC='\033[0m' # No Color
 # Environment variables
 export AWS_REGION=us-east-1
 export EKS_CLUSTER_NAME=dapr-demo-cluster
-export ECR_REGISTRY=322230759107.dkr.ecr.us-east-1.amazonaws.com
+export ECR_REGISTRY=${ECR_REGISTRY:-322230759107.dkr.ecr.us-east-1.amazonaws.com}
 export NAMESPACE=dapr-demo
 export GITHUB_SHA=$(git rev-parse HEAD)
 
@@ -73,7 +73,9 @@ deploy_service() {
   echo "======================================${NC}"
   
   kubectl apply -f "k8s/$service_file" -n $NAMESPACE
-  kubectl apply -f "k8s/$deployment_file" -n $NAMESPACE
+  
+  # Apply deployment with environment variable substitution
+  envsubst < "k8s/$deployment_file" | kubectl apply -f - -n $NAMESPACE
   
   echo "Waiting for $service_name rollout..."
   kubectl rollout status deployment/$service_name -n $NAMESPACE --timeout=5m

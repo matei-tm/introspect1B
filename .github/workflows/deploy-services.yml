@@ -16,7 +16,7 @@ on:
 env:
   AWS_REGION: us-east-1
   EKS_CLUSTER_NAME: dapr-demo-cluster
-  ECR_REGISTRY: 322230759107.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REGISTRY: ${{ secrets.ECR_REGISTRY || '322230759107.dkr.ecr.us-east-1.amazonaws.com' }}
   NAMESPACE: dapr-demo
 
 jobs:
@@ -128,7 +128,7 @@ jobs:
         run: |
           echo "Deploying product-service..."
           kubectl apply -f product-service.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f product-deployment.yaml -n ${{ env.NAMESPACE }}
+          envsubst < product-deployment.yaml | kubectl apply -f - -n ${{ env.NAMESPACE }}
           
           echo "Waiting for product-service rollout..."
           kubectl rollout status deployment/product -n ${{ env.NAMESPACE }} --timeout=5m
@@ -194,7 +194,7 @@ jobs:
         run: |
           echo "Deploying order-service..."
           kubectl apply -f order-service.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f order-deployment.yaml -n ${{ env.NAMESPACE }}
+          envsubst < order-deployment.yaml | kubectl apply -f - -n ${{ env.NAMESPACE }}
           
           echo "Waiting for order-service rollout..."
           kubectl rollout status deployment/order -n ${{ env.NAMESPACE }} --timeout=5m

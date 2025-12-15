@@ -188,6 +188,7 @@ terraform apply
 2. Configure repository secrets:
    - `AWS_ACCESS_KEY_ID`
    - `AWS_SECRET_ACCESS_KEY`
+   - `ECR_REGISTRY` (optional, defaults to `322230759107.dkr.ecr.us-east-1.amazonaws.com`)
 3. Trigger the workflow:
    - **Automatic**: Push changes to `product-service/` or `order-service/`
    - **Manual**: Run workflow via GitHub Actions UI
