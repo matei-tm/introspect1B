@@ -147,107 +147,80 @@ resource "kubernetes_service_account" "fluent_bit" {
   depends_on = [kubernetes_namespace.amazon_cloudwatch]
 }
 
-# ClusterRole for CloudWatch Agent
-resource "kubernetes_cluster_role" "cloudwatch_agent" {
-  metadata {
-    name = "cloudwatch-agent-role"
-  }
-
-  rule {
-    api_groups = [""]
-    resources  = ["nodes", "nodes/proxy", "nodes/stats", "services", "endpoints", "pods", "configmaps", "namespaces"]
-    verbs      = ["get", "list", "watch", "create", "update"]
-  }
-
-  rule {
-    api_groups = ["apps"]
-    resources  = ["deployments", "daemonsets", "replicasets", "statefulsets"]
-    verbs      = ["get", "list", "watch"]
-  }
-
-  rule {
-    api_groups = ["batch"]
-    resources  = ["jobs", "cronjobs"]
-    verbs      = ["get", "list", "watch"]
-  }
-
-  rule {
-    api_groups = ["discovery.k8s.io"]
-    resources  = ["endpointslices"]
-    verbs      = ["get", "list", "watch"]
-  }
-
-  rule {
-    api_groups = [""]
-    resources  = ["nodes/metrics"]
-    verbs      = ["get"]
-  }
-
-  rule {
-    non_resource_urls = ["/metrics"]
-    verbs             = ["get"]
-  }
-}
-
-# ClusterRoleBinding for CloudWatch Agent
-resource "kubernetes_cluster_role_binding" "cloudwatch_agent" {
-  metadata {
-    name = "cloudwatch-agent-role-binding"
-  }
-
-  role_ref {
-    api_group = "rbac.authorization.k8s.io"
-    kind      = "ClusterRole"
-    name      = kubernetes_cluster_role.cloudwatch_agent.metadata[0].name
-  }
-
-  subject {
-    kind      = "ServiceAccount"
-    name      = kubernetes_service_account.cloudwatch_agent.metadata[0].name
-    namespace = kubernetes_namespace.amazon_cloudwatch.metadata[0].name
-  }
-
-  depends_on = [
-    kubernetes_cluster_role.cloudwatch_agent,
-    kubernetes_service_account.cloudwatch_agent
-  ]
-}
-
-# ClusterRole for Fluent Bit
-resource "kubernetes_cluster_role" "fluent_bit" {
-  metadata {
-    name = "fluent-bit-role"
-  }
-
-  rule {
-    api_groups = [""]
-    resources  = ["namespaces", "pods", "pods/logs"]
-    verbs      = ["get", "list", "watch"]
-  }
-}
-
-# ClusterRoleBinding for Fluent Bit
-resource "kubernetes_cluster_role_binding" "fluent_bit" {
-  metadata {
-    name = "fluent-bit-role-binding"
-  }
-
-  role_ref {
-    api_group = "rbac.authorization.k8s.io"
-    kind      = "ClusterRole"
-    name      = kubernetes_cluster_role.fluent_bit.metadata[0].name
-  }
-
-  subject {
-    kind      = "ServiceAccount"
-    name      = kubernetes_service_account.fluent_bit.metadata[0].name
-    namespace = kubernetes_namespace.amazon_cloudwatch.metadata[0].name
+# Apply RBAC using kubectl to avoid authorization issues
+resource "null_resource" "cloudwatch_rbac" {
+  provisioner "local-exec" {
+    command = <<-EOT
+      kubectl apply -f - <<EOF
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: cloudwatch-agent-role
+      rules:
+      - apiGroups: [""]
+        resources: ["nodes", "nodes/proxy", "nodes/stats", "services", "endpoints", "pods", "configmaps", "namespaces"]
+        verbs: ["get", "list", "watch", "create", "update"]
+      - apiGroups: ["apps"]
+        resources: ["deployments", "daemonsets", "replicasets", "statefulsets"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["batch"]
+        resources: ["jobs", "cronjobs"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["discovery.k8s.io"]
+        resources: ["endpointslices"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: [""]
+        resources: ["nodes/metrics"]
+        verbs: ["get"]
+      - nonResourceURLs: ["/metrics"]
+        verbs: ["get"]
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: cloudwatch-agent-role-binding
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: cloudwatch-agent-role
+      subjects:
+      - kind: ServiceAccount
+        name: cloudwatch-agent
+        namespace: amazon-cloudwatch
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: fluent-bit-role
+      rules:
+      - apiGroups: [""]
+        resources: ["namespaces", "pods", "pods/logs"]
+        verbs: ["get", "list", "watch"]
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: fluent-bit-role-binding
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: fluent-bit-role
+      subjects:
+      - kind: ServiceAccount
+        name: fluent-bit
+        namespace: amazon-cloudwatch
+      EOF
+    EOT
   }
 
   depends_on = [
-    kubernetes_cluster_role.fluent_bit,
+    kubernetes_service_account.cloudwatch_agent,
     kubernetes_service_account.fluent_bit
   ]
+
+  triggers = {
+    always_run = timestamp()
+  }
 }
 
 # ConfigMap for CloudWatch Agent
