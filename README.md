@@ -180,7 +180,8 @@ This project demonstrates:
 │       │   └── vlabs.spec.js       # Playwright test for lab initialization
 │       ├── playwright.config.js
 │       ├── package.json
-│       └── run-tests.ps1
+│       ├── start-lab.ps1           # PowerShell script for Windows
+│       └── start-lab.sh            # Bash script for Linux/macOS
 └── README.md                       # This file
 ```
 
@@ -200,17 +201,94 @@ Before starting, ensure you have:
 
 The lab environment can be initialized automatically using a Playwright script that reproduces the same steps a student would perform manually. This automation ensures consistent and repeatable lab setup.
 
-```bash
-# PowerShell
+### Local Execution
+
+#### Using PowerShell (Windows)
+
+Use the PowerShell script to start the lab locally:
+
+```powershell
 cd src/labinit
+.\start-lab.ps1
+```
+
+The script will:
+1. Prompt for your credentials (username and password)
+2. Install npm dependencies
+3. Install Playwright browsers with system dependencies
+4. Run the lab initialization tests
+
+Alternatively, you can set credentials as environment variables:
+
+```powershell
 $env:SITE_USER = "youruser"
 $env:SITE_PASSWORD = "yourpass"
+.\start-lab.ps1
+```
+
+**Advanced options:**
+```powershell
+# Run with headed browser (visible UI)
+.\start-lab.ps1 -Headed
+
+# Enable trace recording for debugging
+.\start-lab.ps1 -Trace
+
+# Force reinstall of Playwright browsers
+.\start-lab.ps1 -ReinstallBrowsers
+```
+
+#### Using Bash (Linux/macOS)
+
+Use the bash script to start the lab locally:
+
+```bash
+cd src/labinit
+./start-lab.sh
+```
+
+Set credentials as environment variables:
+
+```bash
+export SITE_USER="youruser"
+export SITE_PASSWORD="yourpass"
+./start-lab.sh
+```
+
+**Advanced options:**
+```bash
+# Pass credentials directly
+./start-lab.sh --user youruser --password yourpass
+
+# Run with headed browser (visible UI)
+./start-lab.sh --headed
+
+# Enable trace recording for debugging
+./start-lab.sh --trace
+
+# Force reinstall of Playwright browsers
+./start-lab.sh --reinstall-browsers
+
+# Show help
+./start-lab.sh --help
+```
+
+#### Manual Steps
+
+Or run the steps manually:
+
+```bash
+cd src/labinit
+export SITE_USER="youruser"
+export SITE_PASSWORD="yourpass"
 npm ci
 npx playwright install --with-deps
 npm test
 ```
 
-**GitHub Actions**: The workflow `.github/workflows/ci.yml` automates the lab initialization using repository secrets:
+### GitHub Actions
+
+The workflow `.github/workflows/ci.yml` automates the lab initialization using repository secrets:
 - `SITE_USER`: username
 - `SITE_PASSWORD`: password
 
