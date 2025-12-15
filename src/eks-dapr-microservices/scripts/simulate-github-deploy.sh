@@ -93,7 +93,23 @@ kubectl cluster-info
 echo -e "${BLUE}======================================"
 echo "Deploying Dapr components..."
 echo "======================================${NC}"
+
+# Apply RBAC for Dapr component access
+echo -e "${YELLOW}Applying Dapr RBAC...${NC}"
+kubectl apply -f k8s/dapr-rbac.yaml || echo "RBAC already exists"
+
+# Apply Dapr components (CRDs)
 kubectl apply -f dapr/ -n $NAMESPACE || echo "Dapr components already exist"
+
+# Create Dapr components ConfigMap for sidecar mounting
+echo -e "${YELLOW}Creating Dapr components ConfigMap...${NC}"
+kubectl create configmap dapr-components \
+  --from-file=dapr/pubsub.yaml \
+  --from-file=dapr/statestore.yaml \
+  -n $NAMESPACE \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+echo -e "${GREEN}✅ Dapr components configured${NC}"
 
 # Build and deploy based on service argument
 if [[ "$SERVICE" == "all" ]] || [[ "$SERVICE" == "product-service" ]]; then
