@@ -1,5 +1,53 @@
 ﻿# Cloud Native Applications - Lab 2: EKS Dapr Microservices
 
+- [Cloud Native Applications - Lab 2: EKS Dapr Microservices](#cloud-native-applications---lab-2-eks-dapr-microservices)
+  - [📋 Overview](#-overview)
+  - [🏗️ Architecture](#️-architecture)
+  - [🔑 Key Features](#-key-features)
+    - [Product Service](#product-service)
+    - [Order Service](#order-service)
+    - [Infrastructure Management](#infrastructure-management)
+  - [📦 Repository Structure](#-repository-structure)
+  - [🚀 Prerequisites](#-prerequisites)
+  - [🧪 Lab Initialization Automation](#-lab-initialization-automation)
+  - [📥 Quick Start](#-quick-start)
+    - [Step 1: Deploy Infrastructure with Terraform](#step-1-deploy-infrastructure-with-terraform)
+    - [Step 2: Deploy Services](#step-2-deploy-services)
+      - [Option A: Using GitHub Actions (CI/CD)](#option-a-using-github-actions-cicd)
+      - [Option B: Local Simulation (Development)](#option-b-local-simulation-development)
+  - [🧪 Testing and Verification](#-testing-and-verification)
+    - [Quick Test](#quick-test)
+    - [Manual Verification](#manual-verification)
+      - [1. Check Pod Status](#1-check-pod-status)
+      - [2. View End-to-End Message Flow](#2-view-end-to-end-message-flow)
+      - [3. Verify Dapr Components](#3-verify-dapr-components)
+  - [📊 Observing Real-Time Events](#-observing-real-time-events)
+    - [Log Streaming](#log-streaming)
+    - [Dapr Sidecar Logs](#dapr-sidecar-logs)
+  - [🔧 Configuration](#-configuration)
+    - [Terraform Variables](#terraform-variables)
+    - [Scaling](#scaling)
+    - [Resource Limits](#resource-limits)
+  - [🐛 Troubleshooting](#-troubleshooting)
+    - [Pods Not Starting](#pods-not-starting)
+    - [Dapr Sidecar Issues](#dapr-sidecar-issues)
+    - [AWS Permission Issues](#aws-permission-issues)
+    - [Terraform State Issues](#terraform-state-issues)
+  - [💰 Cost Considerations](#-cost-considerations)
+  - [🧹 Cleanup](#-cleanup)
+    - [Quick Cleanup](#quick-cleanup)
+    - [Complete Infrastructure Cleanup](#complete-infrastructure-cleanup)
+  - [📚 Key Concepts Demonstrated](#-key-concepts-demonstrated)
+    - [1. Dapr Sidecar Pattern](#1-dapr-sidecar-pattern)
+    - [2. Pub/Sub Messaging](#2-pubsub-messaging)
+    - [3. Infrastructure as Code](#3-infrastructure-as-code)
+    - [4. Kubernetes Best Practices](#4-kubernetes-best-practices)
+    - [5. Event-Driven Architecture](#5-event-driven-architecture)
+  - [📖 Learning Resources](#-learning-resources)
+  - [🎯 Lab Objectives Met](#-lab-objectives-met)
+  - [📝 License](#-license)
+  - [🤝 Contributing](#-contributing)
+
 
 
 A complete demonstration of containerized microservices deployed on Amazon EKS with Dapr sidecars implementing pub/sub messaging patterns using AWS SNS/SQS for real-time event-driven interactions.
@@ -147,6 +195,26 @@ Before starting, ensure you have:
 - **AWS Account** with appropriate permissions
 - **AWS credentials** configured (`aws configure`)
 - **Git**: For version control and commit SHA tracking
+
+## 🧪 Lab Initialization Automation
+
+The lab environment can be initialized automatically using a Playwright script that reproduces the same steps a student would perform manually. This automation ensures consistent and repeatable lab setup.
+
+```bash
+# PowerShell
+cd src/labinit
+$env:SITE_USER = "youruser"
+$env:SITE_PASSWORD = "yourpass"
+npm ci
+npx playwright install --with-deps
+npm test
+```
+
+**GitHub Actions**: The workflow `.github/workflows/ci.yml` automates the lab initialization using repository secrets:
+- `SITE_USER`: username
+- `SITE_PASSWORD`: password
+
+<img width="658" height="304" alt="Lab Initialization Automation Results" src="docs/media/init-lab.png" />
 
 ## 📥 Quick Start
 
@@ -493,26 +561,6 @@ Each pod contains two containers:
 - Complete Terraform configuration
 - Automated infrastructure provisioning
 - State management and drift detection
-
-## 🧪 Lab Initialization Automation
-
-The lab environment can be initialized automatically using a Playwright script that reproduces the same steps a student would perform manually. This automation ensures consistent and repeatable lab setup.
-
-```bash
-# PowerShell
-cd src/labinit
-$env:SITE_USER = "youruser"
-$env:SITE_PASSWORD = "yourpass"
-npm ci
-npx playwright install --with-deps
-npm test
-```
-
-**GitHub Actions**: The workflow `.github/workflows/ci.yml` automates the lab initialization using repository secrets:
-- `SITE_USER`: username
-- `SITE_PASSWORD`: password
-
-<img width="658" height="304" alt="Lab Initialization Automation Results" src="https://github.com/user-attachments/assets/62fc55e1-74b0-4791-9c49-4bbb93a41f89" />
 
 ## 📝 License
 
