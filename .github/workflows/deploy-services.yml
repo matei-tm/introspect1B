@@ -1,4 +1,4 @@
-name: Build and Deploy Microservices
+name: 3. Build and Deploy Microservices
 
 on:
   workflow_dispatch:

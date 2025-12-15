@@ -1,4 +1,4 @@
-﻿name: Start Lab
+﻿name: 1. Start Lab
 
 on:
   workflow_dispatch:
