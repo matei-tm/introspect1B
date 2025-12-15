@@ -1,5 +1,7 @@
 ﻿# Cloud Native Applications - Lab 2: EKS Dapr Microservices
 
+
+
 A complete demonstration of containerized microservices deployed on Amazon EKS with Dapr sidecars implementing pub/sub messaging patterns using AWS SNS/SQS for real-time event-driven interactions.
 
 ## 📋 Overview
@@ -491,9 +493,9 @@ Each pod contains two containers:
 - Automated infrastructure provisioning
 - State management and drift detection
 
-## 🧪 Lab Initialization Tests
+## 🧪 Lab Initialization Automation
 
-For automated lab verification, use the Playwright tests:
+The lab environment can be initialized automatically using a Playwright script that reproduces the same steps a student would perform manually. This automation ensures consistent and repeatable lab setup.
 
 ```bash
 # PowerShell
@@ -505,15 +507,15 @@ npx playwright install --with-deps
 npm test
 ```
 
-**GitHub Actions**: The workflow `.github/workflows/ci.yml` uses repository secrets:
+**GitHub Actions**: The workflow `.github/workflows/ci.yml` automates the lab initialization using repository secrets:
 - `SITE_USER`: username
 - `SITE_PASSWORD`: password
 
-<img width="658" height="304" alt="Lab Initialization Test Results" src="https://github.com/user-attachments/assets/62fc55e1-74b0-4791-9c49-4bbb93a41f89" />
+<img width="658" height="304" alt="Lab Initialization Automation Results" src="https://github.com/user-attachments/assets/62fc55e1-74b0-4791-9c49-4bbb93a41f89" />
 
 ## 📝 License
 
-This project is for educational purposes as part of Cloud Native Applications Lab 2.
+This project is for educational purposes as part of Introspect1B for Cloud Native Architecture Level 2.
 
 ## 🤝 Contributing
 
