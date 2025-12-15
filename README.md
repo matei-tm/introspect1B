@@ -1,6 +1,6 @@
-﻿# Cloud Native Applications - Lab 2: EKS Dapr Microservices
+﻿# Cloud Native Architecture Course - Introspect 1B: EKS Dapr Microservices
 
-- [Cloud Native Applications - Lab 2: EKS Dapr Microservices](#cloud-native-applications---lab-2-eks-dapr-microservices)
+- [Cloud Native Architecture Course - Introspect 1B: EKS Dapr Microservices](#cloud-native-architecture-course---introspect-1b-eks-dapr-microservices)
   - [⚡ TL;DR - Quick Start](#-tldr---quick-start)
   - [📋 Overview](#-overview)
   - [🏗️ Architecture](#️-architecture)
