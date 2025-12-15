@@ -1,6 +1,7 @@
 ﻿# Cloud Native Applications - Lab 2: EKS Dapr Microservices
 
 - [Cloud Native Applications - Lab 2: EKS Dapr Microservices](#cloud-native-applications---lab-2-eks-dapr-microservices)
+  - [⚡ TL;DR - Quick Start](#-tldr---quick-start)
   - [📋 Overview](#-overview)
   - [🏗️ Architecture](#️-architecture)
   - [🔑 Key Features](#-key-features)
@@ -10,6 +11,11 @@
   - [📦 Repository Structure](#-repository-structure)
   - [🚀 Prerequisites](#-prerequisites)
   - [🧪 Lab Initialization Automation](#-lab-initialization-automation)
+    - [Local Execution](#local-execution)
+      - [Using PowerShell (Windows)](#using-powershell-windows)
+      - [Using Bash (Linux/macOS)](#using-bash-linuxmacos)
+      - [Manual Steps](#manual-steps)
+    - [GitHub Actions](#github-actions)
   - [📥 Quick Start](#-quick-start)
     - [Step 1: Deploy Infrastructure with Terraform](#step-1-deploy-infrastructure-with-terraform)
     - [Step 2: Deploy Services](#step-2-deploy-services)
@@ -51,6 +57,43 @@
 
 
 A complete demonstration of containerized microservices deployed on Amazon EKS with Dapr sidecars implementing pub/sub messaging patterns using AWS SNS/SQS for real-time event-driven interactions.
+
+## ⚡ TL;DR - Quick Start
+
+**Get up and running in minutes using GitHub Actions automation!**
+
+1. **Fork this repository** to your GitHub account
+
+2. **Configure GitHub Secrets** (Settings → Secrets and variables → Actions → New repository secret):
+   ```
+   AWS_ACCESS_KEY_ID       = <your-aws-access-key>
+   AWS_SECRET_ACCESS_KEY   = <your-aws-secret-key>
+   ECR_REGISTRY            = <optional: your-account-id.dkr.ecr.region.amazonaws.com>
+   SITE_USER               = <your-lab-username>
+   SITE_PASSWORD           = <your-lab-password>
+   ```
+
+3. **Run the workflows** (Actions tab) in order:
+   - **Step 1**: `1. Start Lab` - Initialize lab environment with Playwright automation (~2 min)
+   - **Step 2**: `2. Deploy Terraform Infrastructure` - Provisions EKS, VPC, ECR, SNS/SQS, DynamoDB (~15 min)
+   - **Step 3**: `3. Build and Deploy Microservices` - Builds and deploys services (~5 min)
+
+4. **Verify deployment**:
+   ```bash
+   aws eks update-kubeconfig --region us-east-1 --name dapr-demo-cluster
+   kubectl get pods -n dapr-demo
+   kubectl logs -n dapr-demo -l app=product -c product --tail=10
+   ```
+
+**Available GitHub Actions workflows:**
+
+<img src="docs/media/workflow-list.png" alt="GitHub Actions Workflows" width="800" />
+
+That's it! Your microservices are now running on EKS with Dapr pub/sub messaging. 🚀
+
+For detailed setup, local development, and troubleshooting, continue reading below.
+
+---
 
 ## 📋 Overview
 
