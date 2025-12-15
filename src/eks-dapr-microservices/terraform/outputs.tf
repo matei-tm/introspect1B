@@ -78,3 +78,23 @@ output "configure_kubectl" {
   description = "Configure kubectl command"
   value       = "aws eks update-kubeconfig --region ${var.aws_region} --name ${module.eks.cluster_name}"
 }
+
+output "cloudwatch_log_group_application" {
+  description = "CloudWatch Logs group for application logs"
+  value       = "/aws/containerinsights/${var.cluster_name}/application"
+}
+
+output "cloudwatch_log_group_cluster" {
+  description = "CloudWatch Logs group for cluster control plane logs"
+  value       = "/aws/eks/${var.cluster_name}/cluster"
+}
+
+output "cloudwatch_agent_role_arn" {
+  description = "ARN of the IAM role for CloudWatch agent"
+  value       = aws_iam_role.cloudwatch_agent.arn
+}
+
+output "fluent_bit_role_arn" {
+  description = "ARN of the IAM role for Fluent Bit"
+  value       = aws_iam_role.fluent_bit.arn
+}

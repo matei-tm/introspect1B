@@ -28,8 +28,11 @@
       - [2. View End-to-End Message Flow](#2-view-end-to-end-message-flow)
       - [3. Verify Dapr Components](#3-verify-dapr-components)
   - [📊 Observing Real-Time Events](#-observing-real-time-events)
-    - [Log Streaming](#log-streaming)
+    - [Kubectl Log Streaming](#kubectl-log-streaming)
     - [Dapr Sidecar Logs](#dapr-sidecar-logs)
+    - [AWS CloudWatch Logs](#aws-cloudwatch-logs)
+    - [AWS SNS/SQS Monitoring](#aws-snssqs-monitoring)
+    - [Real-Time Dashboard](#real-time-dashboard)
   - [🔧 Configuration](#-configuration)
     - [Terraform Variables](#terraform-variables)
     - [Scaling](#scaling)
@@ -475,7 +478,7 @@ statestore       5m
 
 ## 📊 Observing Real-Time Events
 
-### Log Streaming
+### Kubectl Log Streaming
 
 Watch both services simultaneously:
 
@@ -489,9 +492,104 @@ kubectl logs -f deployment/order -n dapr-demo -c order
 
 ### Dapr Sidecar Logs
 
+Monitor Dapr sidecar activity to see pub/sub component interactions:
+
 ```bash
+# Product service Dapr sidecar
 kubectl logs deployment/product -n dapr-demo -c daprd --tail=20
+
+# Order service Dapr sidecar
 kubectl logs deployment/order -n dapr-demo -c daprd --tail=20
+```
+
+**What to look for in Dapr logs:**
+- Component initialization: `component loaded. name: messagepubsub, type: pubsub.snssqs`
+- Message publishing: `published message to topic 'orders'`
+- Message subscription: `subscribed to topic 'orders'`
+- CloudEvents processing: `received cloud event`
+
+### AWS CloudWatch Logs
+
+CloudWatch Container Insights is automatically deployed with the Terraform infrastructure. You can view logs through the AWS Console:
+
+1. **Navigate to CloudWatch**:
+   ```
+   AWS Console → CloudWatch → Log groups → /aws/eks/dapr-demo-cluster/cluster
+   ```
+
+2. **View Application Logs**:
+   ```
+   Log groups → /aws/containerinsights/dapr-demo-cluster/application
+   ```
+
+3. **Query logs using CloudWatch Insights**:
+   ```sql
+   fields @timestamp, kubernetes.pod_name, log
+   | filter kubernetes.namespace_name = "dapr-demo"
+   | filter kubernetes.container_name = "product" or kubernetes.container_name = "order"
+   | sort @timestamp desc
+   | limit 100
+   ```
+
+4. **Monitor Dapr component metrics**:
+   ```sql
+   fields @timestamp, kubernetes.pod_name, log
+   | filter kubernetes.container_name = "daprd"
+   | filter log like /published|subscribed|component/
+   | sort @timestamp desc
+   ```
+
+**CloudWatch Resources Deployed:**
+- EKS control plane logging (API, audit, authenticator, controllerManager, scheduler)
+- CloudWatch agent DaemonSet for metrics collection
+- Fluent Bit DaemonSet for log aggregation
+- Automatic log group creation at `/aws/containerinsights/${cluster_name}/application`
+- IAM roles with IRSA for secure CloudWatch access
+
+### AWS SNS/SQS Monitoring
+
+Monitor message flow through AWS services:
+
+**SNS Topic Metrics** (CloudWatch):
+```bash
+# View in AWS Console
+AWS Console → CloudWatch → Metrics → SNS → Topic Metrics → orders
+
+# Or via CLI
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/SNS \
+  --metric-name NumberOfMessagesPublished \
+  --dimensions Name=TopicName,Value=orders \
+  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
+  --period 300 \
+  --statistics Sum \
+  --region us-east-1
+```
+
+**SQS Queue Metrics** (CloudWatch):
+```bash
+# View in AWS Console
+AWS Console → CloudWatch → Metrics → SQS → Queue Metrics → order
+
+# Monitor queue depth
+aws sqs get-queue-attributes \
+  --queue-url $(aws sqs get-queue-url --queue-name order --query QueueUrl --output text) \
+  --attribute-names ApproximateNumberOfMessages \
+  --region us-east-1
+```
+
+### Real-Time Dashboard
+
+Create a CloudWatch dashboard for comprehensive monitoring:
+
+```bash
+# Navigate to CloudWatch → Dashboards → Create dashboard
+# Add widgets for:
+# - EKS pod CPU/Memory
+# - SNS NumberOfMessagesPublished
+# - SQS NumberOfMessagesReceived
+# - Application logs from both services
 ```
 
 ## 🔧 Configuration

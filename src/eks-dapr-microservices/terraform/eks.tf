@@ -17,6 +17,9 @@ module "eks" {
   # Enable IRSA (IAM Roles for Service Accounts)
   enable_irsa = true
 
+  # Enable CloudWatch logging for EKS control plane
+  cluster_enabled_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+
   # EKS Managed Node Group
   eks_managed_node_groups = {
     main = {
