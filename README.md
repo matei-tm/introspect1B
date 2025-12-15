@@ -123,7 +123,7 @@ This project demonstrates:
 │   │   │   └── deploy-services.yml      # Service deployment workflow
 │   │   └── scripts/
 │   │       ├── simulate-github-deploy.sh    # Local deployment simulation
-│   │       ├── simulate-github-start-lab.sh # Lab verification
+│   │       ├── test.sh                      # Lab verification
 │   │       └── cleanup.sh                   # Resource cleanup
 │   └── labinit/
 │       ├── tests/
@@ -217,7 +217,7 @@ cd src/eks-dapr-microservices
 
 ```bash
 cd src/eks-dapr-microservices/scripts
-./simulate-github-start-lab.sh
+./test.sh
 ```
 
 ### Manual Verification
