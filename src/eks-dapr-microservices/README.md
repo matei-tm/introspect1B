@@ -16,77 +16,107 @@ This project demonstrates:
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      Amazon EKS Cluster                      │
-│                                                               │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │              Namespace: dapr-demo                       │ │
-│  │                                                          │ │
-│  │  ┌──────────────────┐         ┌──────────────────┐    │ │
-│  │  │   Publisher Pod  │         │  Subscriber Pod  │    │ │
-│  │  │  ┌────────────┐  │         │  ┌────────────┐  │    │ │
-│  │  │  │ Publisher  │  │         │  │ Subscriber │  │    │ │
-│  │  │  │  Service   │  │         │  │  Service   │  │    │ │
-│  │  │  │ (Node.js)  │  │         │  │ (Node.js)  │  │    │ │
-│  │  │  └────────────┘  │         │  └────────────┘  │    │ │
-│  │  │        ↓         │         │        ↑         │    │ │
-│  │  │  ┌────────────┐  │         │  ┌────────────┐  │    │ │
-│  │  │  │   Dapr     │  │         │  │   Dapr     │  │    │ │
-│  │  │  │  Sidecar   │◄─┼────────►│  │  Sidecar   │  │    │ │
-│  │  │  └────────────┘  │         │  └────────────┘  │    │ │
-│  │  └──────────────────┘         └──────────────────┘    │ │
-│  │            │                            ▲              │ │
-│  │            │      ┌──────────────┐     │              │ │
-│  │            └─────►│    Redis     │─────┘              │ │
-│  │                   │  (Pub/Sub)   │                    │ │
-│  │                   └──────────────┘                    │ │
-│  └────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                      Amazon EKS Cluster                          │
+│                                                                   │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │              Namespace: dapr-demo                           │ │
+│  │                                                              │ │
+│  │  ┌──────────────────┐         ┌──────────────────┐        │ │
+│  │  │  Product Pod     │         │   Order Pod      │        │ │
+│  │  │  ┌────────────┐  │         │  ┌────────────┐  │        │ │
+│  │  │  │  Product   │  │         │  │   Order    │  │        │ │
+│  │  │  │  Service   │  │         │  │  Service   │  │        │ │
+│  │  │  │ (Node.js)  │  │         │  │ (Node.js)  │  │        │ │
+│  │  │  └────────────┘  │         │  └────────────┘  │        │ │
+│  │  │        ↓         │         │        ↑         │        │ │
+│  │  │  ┌────────────┐  │         │  ┌────────────┐  │        │ │
+│  │  │  │   Dapr     │  │         │  │   Dapr     │  │        │ │
+│  │  │  │  Sidecar   │  │         │  │  Sidecar   │  │        │ │
+│  │  │  └─────┬──────┘  │         │  └──────┬─────┘  │        │ │
+│  │  └────────┼─────────┘         └─────────┼────────┘        │ │
+│  │            │                             │                 │ │
+│  │            │   (IRSA Authentication)     │                 │ │
+│  └────────────┼─────────────────────────────┼─────────────────┘ │
+│               │                             │                   │
+│               ↓                             ↓                   │
+└───────────────┼─────────────────────────────┼───────────────────┘
+                │                             │
+         ┌──────▼──────┐             ┌───────▼────────┐
+         │   AWS SNS   │────────────►│   AWS SQS      │
+         │   (Topic)   │             │   (Queue)      │
+         │   orders    │             │    order       │
+         └─────────────┘             └────────────────┘
+                                              │
+         ┌────────────────────────────────────┘
+         │
+         ▼
+  ┌─────────────┐
+  │  DynamoDB   │
+  │ (State)     │
+  └─────────────┘
 ```
 
 ## 🔑 Key Features
 
-### Publisher Service
+### Product Service
 - Automatically publishes order messages every 5 seconds
-- Uses Dapr HTTP API to publish to Redis pub/sub
+- Uses Dapr HTTP API to publish to AWS SNS topic
 - Generates realistic order data (order ID, customer, product, etc.)
 - Health check endpoint for Kubernetes probes
+- Deployed with manual Dapr sidecar injection
 
-### Subscriber Service
-- Subscribes to order messages via Dapr pub/sub
+### Order Service
+- Subscribes to order messages via Dapr pub/sub from AWS SQS
 - Implements Dapr subscription endpoint (`/dapr/subscribe`)
 - Processes incoming orders with simulated business logic
 - Tracks and displays received messages
-- Supports multiple replicas for load distribution
+- Supports multiple replicas (2 by default) for load distribution
+- Uses IRSA for secure AWS access without credentials
 
 ## 📦 Project Structure
 
 ```
 eks-dapr-microservices/
-├── publisher-service/
-│   ├── app.js              # Publisher application
+├── product-service/
+│   ├── app.js              # Product service application
 │   ├── package.json        # Dependencies
 │   ├── Dockerfile          # Container image
 │   └── .dockerignore
-├── subscriber-service/
-│   ├── app.js              # Subscriber application
+├── order-service/
+│   ├── app.js              # Order service application
 │   ├── package.json        # Dependencies
 │   ├── Dockerfile          # Container image
 │   └── .dockerignore
+├── terraform/
+│   ├── main.tf             # Main Terraform configuration
+│   ├── vpc.tf              # VPC and networking
+│   ├── eks.tf              # EKS cluster configuration
+│   ├── iam.tf              # IAM roles and policies (including IRSA)
+│   ├── ecr.tf              # ECR repositories
+│   ├── aws-resources.tf    # SNS, SQS, DynamoDB
+│   ├── kubernetes.tf       # Kubernetes resources
+│   ├── helm.tf             # Dapr and Metrics Server
+│   ├── variables.tf        # Input variables
+│   ├── outputs.tf          # Output values
+│   └── terraform.tfvars.example
 ├── k8s/
-│   ├── namespace.yaml               # Kubernetes namespace
-│   ├── publisher-deployment.yaml    # Publisher deployment
-│   ├── publisher-service.yaml       # Publisher service
-│   ├── subscriber-deployment.yaml   # Subscriber deployment (2 replicas)
-│   └── subscriber-service.yaml      # Subscriber service
+│   ├── dapr-rbac.yaml           # RBAC for Dapr component access
+│   ├── product-deployment.yaml  # Product deployment with manual sidecar
+│   ├── product-service.yaml     # Product service
+│   ├── order-deployment.yaml    # Order deployment (2 replicas)
+│   └── order-service.yaml       # Order service
 ├── dapr/
-│   ├── pubsub.yaml         # Dapr pub/sub component (Redis)
-│   ├── statestore.yaml     # Dapr state store component
+│   ├── pubsub.yaml         # Dapr pub/sub component (AWS SNS/SQS)
+│   ├── statestore.yaml     # Dapr state store (AWS DynamoDB)
 │   └── configuration.yaml  # Dapr configuration
+├── .github/workflows/
+│   ├── terraform-deploy.yml     # Infrastructure deployment
+│   └── deploy-services.yml      # Service deployment workflow
 ├── scripts/
-│   ├── setup.sh            # Complete setup automation
-│   ├── cleanup.sh          # Cleanup resources
-│   └── test.sh             # Test and verify deployment
+│   ├── simulate-github-deploy.sh    # Local simulation of GitHub Actions
+│   ├── simulate-github-start-lab.sh # Start lab verification
+│   └── cleanup.sh                   # Cleanup resources
 └── README.md
 ```
 
@@ -95,124 +125,91 @@ eks-dapr-microservices/
 Before starting, ensure you have:
 
 - **AWS CLI** (v2.x): [Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+- **Terraform** (~> 1.0): [Installation Guide](https://developer.hashicorp.com/terraform/install)
 - **kubectl** (v1.27+): [Installation Guide](https://kubernetes.io/docs/tasks/tools/)
-- **eksctl** (v0.147+): [Installation Guide](https://eksctl.io/installation/)
-- **Helm** (v3.x): [Installation Guide](https://helm.sh/docs/intro/install/)
 - **Docker**: [Installation Guide](https://docs.docker.com/get-docker/)
 - **AWS Account** with appropriate permissions
 - **AWS credentials** configured (`aws configure`)
+- **Git**: For version control and commit SHA tracking
 
-## 📥 Installation
+## 📥 Deployment
 
-### Option 1: Automated Setup (Recommended)
+The project uses a two-stage deployment approach:
+1. **Infrastructure**: Terraform provisions EKS, VPC, IAM, ECR, SNS/SQS, DynamoDB
+2. **Services**: GitHub Actions (or local simulation) builds and deploys microservices
+
+### Step 1: Deploy Infrastructure with Terraform
+
+```bash
+cd terraform
+
+# Copy and configure variables
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your settings
+
+# Initialize Terraform
+terraform init
+
+# Review the plan
+terraform plan
+
+# Apply infrastructure
+terraform apply
+```
+
+Terraform will create:
+- ✅ VPC with public/private subnets
+- ✅ EKS cluster (v1.31) with managed node group
+- ✅ ECR repositories for product-service and order-service
+- ✅ SNS topic and SQS queue for pub/sub messaging
+- ✅ DynamoDB table for state store
+- ✅ IAM roles with IRSA for secure AWS access
+- ✅ Dapr 1.12.5 installed via Helm
+- ✅ Metrics Server for resource monitoring
+- ✅ Kubernetes namespace and service account
+
+### Step 2: Deploy Services
+
+#### Option A: Using GitHub Actions (Recommended for CI/CD)
+
+1. Push your code to GitHub
+2. Configure repository secrets:
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+3. Trigger the workflow:
+   - **Automatic**: Push changes to `product-service/` or `order-service/`
+   - **Manual**: Run workflow via GitHub Actions UI
+
+The workflow (`.github/workflows/deploy-services.yml`) will:
+- Login to ECR
+- Build Docker images for linux/amd64
+- Push images to ECR
+- Apply Dapr components and RBAC
+- Deploy services to EKS
+- Wait for rollout completion
+
+#### Option B: Local Simulation (Recommended for Development)
 
 ```bash
 cd src/eks-dapr-microservices
-./scripts/setup.sh
+
+# Deploy all services
+./scripts/simulate-github-deploy.sh all
+
+# Or deploy individual services
+./scripts/simulate-github-deploy.sh product-service
+./scripts/simulate-github-deploy.sh order-service
 ```
 
 The script will:
-1. ✅ Check prerequisites
-2. 🏗️ Create EKS cluster (optional)
-3. ⚙️ Configure kubectl
-4. 📦 Install Dapr on Kubernetes
-5. 📦 Install Redis for pub/sub
-6. 🐳 Build and push Docker images to ECR
-7. 🚀 Deploy microservices to EKS
-8. ⏳ Wait for deployments to be ready
-
-### Option 2: Manual Setup
-
-#### Step 1: Create EKS Cluster
-
-```bash
-eksctl create cluster \
-  --name dapr-demo-cluster \
-  --region us-east-1 \
-  --nodegroup-name standard-workers \
-  --node-type t3.micro \
-  --nodes 3 \
-  --nodes-min 2 \
-  --nodes-max 4 \
-  --managed
-```
-
-#### Step 2: Install Dapr
-
-```bash
-helm repo add dapr https://dapr.github.io/helm-charts/
-helm repo update
-helm upgrade --install dapr dapr/dapr \
-  --version=1.12 \
-  --namespace dapr-system \
-  --create-namespace \
-  --wait
-```
-
-#### Step 3: Install Redis
-
-```bash
-kubectl create namespace dapr-demo
-helm repo add bitnami https://charts.bitnami.com/bitnami
-helm upgrade --install redis bitnami/redis \
-  --namespace dapr-demo \
-  --set auth.password=redis123 \
-  --set master.persistence.enabled=false \
-  --set replica.replicaCount=1
-```
-
-#### Step 4: Build and Push Docker Images
-
-```bash
-# Get AWS account ID and region
-AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-AWS_REGION=us-east-1
-ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-
-# Create ECR repositories
-aws ecr create-repository --repository-name publisher-service --region $AWS_REGION
-aws ecr create-repository --repository-name subscriber-service --region $AWS_REGION
-
-# Login to ECR
-aws ecr get-login-password --region $AWS_REGION | \
-  docker login --username AWS --password-stdin $ECR_REGISTRY
-
-# Build and push publisher
-cd publisher-service
-docker build -t publisher-service:latest .
-docker tag publisher-service:latest $ECR_REGISTRY/publisher-service:latest
-docker push $ECR_REGISTRY/publisher-service:latest
-cd ..
-
-# Build and push subscriber
-cd subscriber-service
-docker build -t subscriber-service:latest .
-docker tag subscriber-service:latest $ECR_REGISTRY/subscriber-service:latest
-docker push $ECR_REGISTRY/subscriber-service:latest
-cd ..
-```
-
-#### Step 5: Update Kubernetes Manifests
-
-Update `<YOUR_ECR_REGISTRY>` in the deployment files with your ECR registry URL:
-
-```bash
-sed -i "s|<YOUR_ECR_REGISTRY>|$ECR_REGISTRY|g" k8s/publisher-deployment.yaml
-sed -i "s|<YOUR_ECR_REGISTRY>|$ECR_REGISTRY|g" k8s/subscriber-deployment.yaml
-```
-
-#### Step 6: Deploy to Kubernetes
-
-```bash
-# Apply namespace
-kubectl apply -f k8s/namespace.yaml
-
-# Apply Dapr components
-kubectl apply -f dapr/
-
-# Apply applications
-kubectl apply -f k8s/
-```
+1. ✅ Verify AWS credentials
+2. ✅ Login to ECR
+3. ✅ Build Docker images (linux/amd64)
+4. ✅ Push images to ECR
+5. ✅ Update kubeconfig for EKS access
+6. ✅ Apply Dapr RBAC and components
+7. ✅ Create ConfigMap for component mounting
+8. ✅ Deploy services and wait for readiness
 
 ## 🧪 Testing and Verification
 
@@ -232,17 +229,16 @@ kubectl get pods -n dapr-demo
 
 Expected output:
 ```
-NAME                          READY   STATUS    RESTARTS   AGE
-publisher-xxxxxxxxxx-xxxxx    2/2     Running   0          2m
-subscriber-xxxxxxxxxx-xxxxx   2/2     Running   0          2m
-subscriber-xxxxxxxxxx-yyyyy   2/2     Running   0          2m
-redis-master-0                1/1     Running   0          3m
+NAME                       READY   STATUS    RESTARTS   AGE
+product-xxxxxxxxxx-xxxxx   2/2     Running   0          2m
+order-xxxxxxxxxx-xxxxx     2/2     Running   0          2m
+order-xxxxxxxxxx-yyyyy     2/2     Running   0          2m
 ```
 
-#### 2. View Publisher Logs
+#### 2. View Product Service Logs
 
 ```bash
-kubectl logs -f deployment/publisher -n dapr-demo -c publisher
+kubectl logs -f deployment/product -n dapr-demo -c product
 ```
 
 You should see:
@@ -253,15 +249,15 @@ You should see:
 ✅ Published order: order-1702234567890-1 { orderId: '...', ... }
 ```
 
-#### 3. View Subscriber Logs
+#### 3. View Order Service Logs
 
 ```bash
-kubectl logs -f deployment/subscriber -n dapr-demo -c subscriber
+kubectl logs -f deployment/order -n dapr-demo -c order
 ```
 
 You should see:
 ```
-🚀 Subscriber service listening on port 3001
+🚀 Order service listening on port 3001
 👂 Subscribed to topic: orders
 📦 [1] Received order: { orderId: '...', product: 'laptop', ... }
 ✅ Order order-1702234567890-1 processed successfully
@@ -402,26 +398,27 @@ kubectl logs redis-master-0 -n dapr-demo
 ./scripts/cleanup.sh
 ```
 
-### Manual Cleanup
+### Complete Infrastructure Cleanup
 
 ```bash
-# Delete applications
-kubectl delete -f k8s/
-kubectl delete -f dapr/
+# Delete services first
+kubectl delete -f k8s/ -n dapr-demo
+kubectl delete configmap dapr-components -n dapr-demo
 
-# Uninstall Redis
-helm uninstall redis -n dapr-demo
-
-# Delete namespace
-kubectl delete namespace dapr-demo
-
-# Optionally uninstall Dapr
-helm uninstall dapr -n dapr-system
-kubectl delete namespace dapr-system
-
-# Optionally delete EKS cluster
-eksctl delete cluster --name dapr-demo-cluster --region us-east-1
+# Then destroy infrastructure with Terraform
+cd terraform
+terraform destroy
 ```
+
+This will remove:
+- All deployed services and pods
+- Dapr components and RBAC
+- EKS cluster and node groups
+- VPC and networking resources
+- ECR repositories and images
+- SNS topics and SQS queues
+- DynamoDB tables
+- IAM roles and policies
 
 ## 📚 Key Concepts Demonstrated
 

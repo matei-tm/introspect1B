@@ -270,4 +270,4 @@ terraform {
 
 ## License
 
-This configuration is for educational purposes as part of Cloud Native Applications Lab 2.
+This configuration is for educational purposes as part of the Introspect1B from course Cloud Native Applications Level 2.
