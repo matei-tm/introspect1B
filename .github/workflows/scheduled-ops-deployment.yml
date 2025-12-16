@@ -73,9 +73,33 @@ jobs:
     with:
       service: all
 
+  deploy-services-retry-1:
+    name: 3. Build and Deploy Microservices (Retry 1)
+    needs: [terraform-deploy, deploy-services]
+    if: failure() && needs.deploy-services.result == 'failure'
+    uses: ./.github/workflows/deploy-services.yml
+    secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      service: all
+
+  deploy-services-retry-2:
+    name: 3. Build and Deploy Microservices (Retry 2)
+    needs: [terraform-deploy, deploy-services, deploy-services-retry-1]
+    if: failure() && needs.deploy-services-retry-1.result == 'failure'
+    uses: ./.github/workflows/deploy-services.yml
+    secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      service: all
+
   deployment-summary:
     name: Deployment Summary
-    needs: [check-enabled, start-lab, terraform-deploy, deploy-services]
+    needs: [check-enabled, start-lab, terraform-deploy, deploy-services, deploy-services-retry-1, deploy-services-retry-2]
     runs-on: ubuntu-latest
     if: always() && needs.check-enabled.outputs.enabled == 'true'
     steps:
@@ -88,4 +112,11 @@ jobs:
           echo "## Job Status" >> $GITHUB_STEP_SUMMARY
           echo "- Start Lab: ${{ needs.start-lab.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Terraform Deploy: ${{ needs.terraform-deploy.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Deploy Services: ${{ needs.deploy-services.result }}" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.deploy-services-retry-1.result }}" != "skipped" ]]; then
+            echo "- Deploy Services (Retry 1): ${{ needs.deploy-services-retry-1.result }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [[ "${{ needs.deploy-services-retry-2.result }}" != "skipped" ]]; then
+            echo "- Deploy Services (Retry 2): ${{ needs.deploy-services-retry-2.result }}" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "- Deploy Services: ${{ needs.deploy-services.result }}" >> $GITHUB_STEP_SUMMARY
