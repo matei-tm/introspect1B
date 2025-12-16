@@ -2,9 +2,8 @@ name: Scheduled Full Deployment
 
 on:
   schedule:
-    # Runs based on DEPLOYMENT_CRON_SCHEDULE variable (default: 1:30 AM GMT daily)
-    # Example values: '30 1 * * *' (daily), '0 */6 * * *' (every 6 hours), '0 9 * * 1' (Mondays at 9 AM)
-    - cron: '30 1 * * *'
+    # Runs at 9:22 PM GMT daily
+    - cron: '22 21 * * *'
   workflow_dispatch:
     # Allow manual triggering for testing
 
@@ -14,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       enabled: ${{ steps.check.outputs.enabled }}
-      cron_schedule: ${{ steps.check.outputs.cron_schedule }}
     steps:
       - name: Check environment variable
         id: check
@@ -28,20 +26,10 @@ jobs:
             echo "⏭️ Scheduled deployment is disabled via ENABLE_SCHEDULED_DEPLOYMENT variable"
           fi
           
-          # Get cron schedule (for informational purposes)
-          CRON_SCHEDULE="${{ vars.DEPLOYMENT_CRON_SCHEDULE }}"
-          if [[ -z "$CRON_SCHEDULE" ]]; then
-            CRON_SCHEDULE="30 1 * * *"
-          fi
-          echo "cron_schedule=$CRON_SCHEDULE" >> $GITHUB_OUTPUT
-          echo "📅 Cron schedule: $CRON_SCHEDULE"
-          
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Configuration" >> $GITHUB_STEP_SUMMARY
           echo "- **Enabled:** ${{ vars.ENABLE_SCHEDULED_DEPLOYMENT }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Schedule:** \`$CRON_SCHEDULE\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "> **Note:** The cron schedule is set in the workflow file. To change it, update the \`schedule.cron\` value in \`.github/workflows/scheduled-ops-deployment.yml\` or use the DEPLOYMENT_CRON_SCHEDULE variable for reference." >> $GITHUB_STEP_SUMMARY
+          echo "- **Schedule:** \`22 21 * * *\` (9:22 PM GMT daily)" >> $GITHUB_STEP_SUMMARY
 
   start-lab:
     name: 1. Start Lab
