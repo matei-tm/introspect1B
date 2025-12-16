@@ -18,6 +18,10 @@ jobs:
     needs: start-lab
     uses: ./.github/workflows/terraform-deploy.yml
     secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
     with:
       action: apply
 
@@ -26,6 +30,9 @@ jobs:
     needs: terraform-deploy
     uses: ./.github/workflows/deploy-services.yml
     secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
     with:
       service: all
 
