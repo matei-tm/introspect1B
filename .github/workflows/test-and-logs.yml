@@ -1,0 +1,211 @@
+name: 4. Test and Collect Logs
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+env:
+  AWS_REGION: us-east-1
+  EKS_CLUSTER_NAME: dapr-demo-cluster
+  NAMESPACE: dapr-demo
+  CLOUDWATCH_NAMESPACE: amazon-cloudwatch
+
+jobs:
+  test-and-logs:
+    name: Test Deployment and Collect Logs
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+
+      - name: Verify cluster access
+        run: kubectl cluster-info
+
+      - name: Check pod status
+        id: pods
+        run: |
+          echo "## 📊 Pod Status" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          kubectl get pods -n ${{ env.NAMESPACE }} | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Check CloudWatch Container Insights
+        id: cloudwatch
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 CloudWatch Container Insights Status" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          kubectl get pods -n ${{ env.CLOUDWATCH_NAMESPACE }} | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Check Dapr components
+        id: dapr
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔧 Dapr Components" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          kubectl get components -n ${{ env.NAMESPACE }} | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Collect product service logs
+        id: product-logs
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📝 Product Service Logs" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          kubectl logs -n ${{ env.NAMESPACE }} deployment/product -c product --tail=20 | tee -a $GITHUB_STEP_SUMMARY || echo "No logs available" | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Collect order service logs
+        id: order-logs
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📝 Order Service Logs" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          kubectl logs -n ${{ env.NAMESPACE }} deployment/order -c order --tail=20 | tee -a $GITHUB_STEP_SUMMARY || echo "No logs available" | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Collect Dapr sidecar logs
+        id: daprd-logs
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📡 Product Dapr Sidecar Logs" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          kubectl logs -n ${{ env.NAMESPACE }} deployment/product -c daprd --tail=20 | tee -a $GITHUB_STEP_SUMMARY || echo "No logs available" | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Collect CloudWatch agent logs
+        id: cw-agent-logs
+        continue-on-error: true
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 CloudWatch Agent Logs" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          kubectl logs -n ${{ env.CLOUDWATCH_NAMESPACE }} daemonset/cloudwatch-agent --tail=20 | tee -a $GITHUB_STEP_SUMMARY || echo "CloudWatch agent logs not available" | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Collect Fluent Bit logs
+        id: fluent-bit-logs
+        continue-on-error: true
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Fluent Bit Logs" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          kubectl logs -n ${{ env.CLOUDWATCH_NAMESPACE }} daemonset/fluent-bit --tail=20 | tee -a $GITHUB_STEP_SUMMARY || echo "Fluent Bit logs not available" | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Generate logs deliverable
+        run: |
+          mkdir -p logs
+          {
+            echo "# EKS Dapr Microservices - Test Results and Logs"
+            echo ""
+            echo "**Generated:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "**Cluster:** ${{ env.EKS_CLUSTER_NAME }}"
+            echo "**Region:** ${{ env.AWS_REGION }}"
+            echo ""
+            
+            echo "## 📊 Pod Status"
+            echo '```'
+            kubectl get pods -n ${{ env.NAMESPACE }}
+            echo '```'
+            echo ""
+            
+            echo "## 📊 CloudWatch Container Insights Status"
+            echo '```'
+            kubectl get pods -n ${{ env.CLOUDWATCH_NAMESPACE }}
+            echo '```'
+            echo ""
+            
+            echo "## 🔧 Dapr Components"
+            echo '```'
+            kubectl get components -n ${{ env.NAMESPACE }}
+            echo '```'
+            echo ""
+            
+            echo "## 📝 Product Service Logs"
+            echo '```'
+            kubectl logs -n ${{ env.NAMESPACE }} deployment/product -c product --tail=50 || echo "No logs available"
+            echo '```'
+            echo ""
+            
+            echo "## 📝 Order Service Logs"
+            echo '```'
+            kubectl logs -n ${{ env.NAMESPACE }} deployment/order -c order --tail=50 || echo "No logs available"
+            echo '```'
+            echo ""
+            
+            echo "## 📡 Product Dapr Sidecar Logs"
+            echo '```'
+            kubectl logs -n ${{ env.NAMESPACE }} deployment/product -c daprd --tail=50 || echo "No logs available"
+            echo '```'
+            echo ""
+            
+            echo "## 📡 Order Dapr Sidecar Logs"
+            echo '```'
+            kubectl logs -n ${{ env.NAMESPACE }} deployment/order -c daprd --tail=50 || echo "No logs available"
+            echo '```'
+            echo ""
+            
+            echo "## 📊 CloudWatch Agent Logs"
+            echo '```'
+            kubectl logs -n ${{ env.CLOUDWATCH_NAMESPACE }} daemonset/cloudwatch-agent --tail=50 || echo "CloudWatch agent logs not available"
+            echo '```'
+            echo ""
+            
+            echo "## 📊 Fluent Bit Logs"
+            echo '```'
+            kubectl logs -n ${{ env.CLOUDWATCH_NAMESPACE }} daemonset/fluent-bit --tail=50 || echo "Fluent Bit logs not available"
+            echo '```'
+            echo ""
+            
+            echo "## 💡 Useful Commands"
+            echo '```bash'
+            echo "# Follow logs in real-time:"
+            echo "kubectl logs -f -n ${{ env.NAMESPACE }} deployment/product -c product"
+            echo "kubectl logs -f -n ${{ env.NAMESPACE }} deployment/order -c order"
+            echo "kubectl logs -f -n ${{ env.CLOUDWATCH_NAMESPACE }} daemonset/cloudwatch-agent"
+            echo "kubectl logs -f -n ${{ env.CLOUDWATCH_NAMESPACE }} daemonset/fluent-bit"
+            echo '```'
+          } > logs/test-results-$(date -u '+%Y%m%d-%H%M%S').md
+
+      - name: Upload logs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-${{ github.run_number }}
+          path: logs/
+          retention-days: 30
+
+      - name: Test summary
+        if: always()
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Test Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📦 Logs artifact uploaded as: \`test-logs-${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Quick Access Commands" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "# Update kubeconfig" >> $GITHUB_STEP_SUMMARY
+          echo "aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Check status" >> $GITHUB_STEP_SUMMARY
+          echo "kubectl get pods -n ${{ env.NAMESPACE }}" >> $GITHUB_STEP_SUMMARY
+          echo "kubectl get pods -n ${{ env.CLOUDWATCH_NAMESPACE }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
