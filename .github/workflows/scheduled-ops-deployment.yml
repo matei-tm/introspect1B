@@ -2,8 +2,8 @@ name: Scheduled Full Deployment
 
 on:
   schedule:
-    # Runs at 9:22 PM GMT daily
-    - cron: '22 21 * * *'
+    # Runs at 9:40 PM GMT daily
+    - cron: '40 21 * * *'
   workflow_dispatch:
     # Allow manual triggering for testing
 

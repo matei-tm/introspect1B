@@ -78,13 +78,14 @@ A complete demonstration of containerized microservices deployed on Amazon EKS w
 
 3. **Configure Repository Variables** (Settings → Secrets and variables → Actions → Variables tab → New repository variable):
    ```
-   ENABLE_SCHEDULED_DEPLOYMENT = true    # Optional: Enable scheduled deployments (runs at 1:30 AM GMT daily)
+   ENABLE_SCHEDULED_DEPLOYMENT = true    # Optional: Enable scheduled deployments based on the cron set on action scheduled-ops-deployment.yml
    ```
    > **Note**: If not set, scheduled deployments will be disabled by default. You can still run the workflow manually.
 
 4. **Run the workflows** (Actions tab):
    
    **Option A - Individual Workflows (recommended for first-time setup):**
+   <img src="docs/media/workflow-list.png" alt="GitHub Actions Workflows" width="200" />
    - **Step 1**: `1. Start Lab` - Initialize lab environment with Playwright automation (~2 min)
    - **Step 2**: `2. Deploy Terraform Infrastructure` - Provisions EKS, VPC, ECR, SNS/SQS, DynamoDB (~15 min)
    - **Step 3**: `3. Build and Deploy Microservices` - Builds and deploys services (~5 min)
@@ -106,7 +107,7 @@ A complete demonstration of containerized microservices deployed on Amazon EKS w
 
 **Available GitHub Actions workflows:**
 
-<img src="docs/media/workflow-list.png" alt="GitHub Actions Workflows" width="200" />
+
 
 That's it! Your microservices are now running on EKS with Dapr pub/sub messaging. 🚀
 
