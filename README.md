@@ -2,6 +2,7 @@
 
 - [Cloud Native Architecture Course - Introspect 1B: EKS Dapr Microservices](#cloud-native-architecture-course---introspect-1b-eks-dapr-microservices)
   - [⚡ TL;DR - Quick Start](#-tldr---quick-start)
+  - [📚 Wiki](#-wiki)
   - [📝 License](#-license)
   - [🤝 Contributing](#-contributing)
 
@@ -44,7 +45,11 @@ That's it! Your microservices are now running on EKS with Dapr pub/sub messaging
 
    <img src="docs/media/workflows-runs.png" alt="GitHub Actions Runs" width="600" />
 
+## 📚 Wiki
+
 For detailed setup, local development, and troubleshooting, continue reading the [wiki](https://github.com/matei-tm/introspect1B/wiki).
+
+   <img src="docs/media/wiki.png" alt="Wiki page" width="600" />
 
 ## 📝 License
 
