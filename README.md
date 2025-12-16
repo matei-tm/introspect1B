@@ -176,6 +176,13 @@ flowchart TB
 
 ```
 .
+├── .github/
+│   └── workflows/
+│       ├── start-lab.yml                    # 1. Lab initialization workflow
+│       ├── terraform-deploy.yml             # 2. Infrastructure deployment workflow
+│       ├── deploy-services.yml              # 3. Microservices deployment workflow
+│       ├── test-and-logs.yml                # 4. Testing and log collection workflow
+│       └── scheduled-ops-deployment.yml     # Scheduled full deployment (disabled by default)
 ├── src/
 │   ├── eks-dapr-microservices/
 │   │   ├── product-service/
@@ -193,6 +200,7 @@ flowchart TB
 │   │   │   ├── iam.tf              # IAM roles and policies (IRSA)
 │   │   │   ├── ecr.tf              # ECR repositories
 │   │   │   ├── aws-resources.tf    # SNS, SQS, DynamoDB
+│   │   │   ├── cloudwatch.tf       # CloudWatch Container Insights
 │   │   │   ├── kubernetes.tf       # Kubernetes resources
 │   │   │   ├── helm.tf             # Dapr and Metrics Server
 │   │   │   ├── variables.tf        # Input variables
@@ -208,13 +216,10 @@ flowchart TB
 │   │   │   ├── pubsub.yaml         # Dapr pub/sub (AWS SNS/SQS)
 │   │   │   ├── statestore.yaml     # Dapr state store (DynamoDB)
 │   │   │   └── configuration.yaml  # Dapr configuration
-│   │   ├── .github/workflows/
-│   │   │   ├── terraform-deploy.yml     # Infrastructure workflow
-│   │   │   └── deploy-services.yml      # Service deployment workflow
 │   │   └── scripts/
 │   │       ├── simulate-github-deploy.sh    # Local deployment simulation
-│   │       ├── test.sh                      # Lab verification
-│   │       └── cleanup.sh                   # Resource cleanup
+│   │       ├── test.sh                      # Lab verification with CloudWatch checks
+│   │       └── cleanup.sh                   # Resource cleanup (updated for SNS/SQS/CloudWatch)
 │   └── labinit/
 │       ├── tests/
 │       │   └── vlabs.spec.js       # Playwright test for lab initialization
@@ -222,6 +227,8 @@ flowchart TB
 │       ├── package.json
 │       ├── start-lab.ps1           # PowerShell script for Windows
 │       └── start-lab.sh            # Bash script for Linux/macOS
+├── docs/
+│   └── media/                      # Screenshots and diagrams
 └── README.md                       # This file
 ```
 
