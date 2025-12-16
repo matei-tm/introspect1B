@@ -83,33 +83,20 @@ A complete demonstration of containerized microservices deployed on Amazon EKS w
    > **Note**: If not set, scheduled deployments will be disabled by default. You can still run the workflow manually.
 
 4. **Run the workflows** (Actions tab):
-   
-   **Option A - Individual Workflows (recommended for first-time setup):**
+   **Available GitHub Actions workflows:**
+
    <img src="docs/media/workflow-list.png" alt="GitHub Actions Workflows" width="200" />
-   - **Step 1**: `1. Start Lab` - Initialize lab environment with Playwright automation (~2 min)
-   - **Step 2**: `2. Deploy Terraform Infrastructure` - Provisions EKS, VPC, ECR, SNS/SQS, DynamoDB (~15 min)
-   - **Step 3**: `3. Build and Deploy Microservices` - Builds and deploys services (~5 min)
-   
-   **Option B - All-in-One Workflow:**
-   - **Manual Run**: `Scheduled Operations - Full Deployment` - Runs all steps sequentially with retry logic (~25 min)
-   - **Scheduled Run**: Automatically runs daily if `ENABLE_SCHEDULED_DEPLOYMENT=true`
 
-5. **Verify deployment** - Run the test and log collection workflow:
-   - **GitHub Actions**: `4. Test and Collect Logs` - Comprehensive testing and log collection (~2 min)
-   - Downloads logs as artifact (30-day retention) with detailed test results and service logs
-   
-   **Or verify manually via CLI**:
-   ```bash
-   aws eks update-kubeconfig --region us-east-1 --name dapr-demo-cluster
-   kubectl get pods -n dapr-demo
-   kubectl logs -n dapr-demo -l app=product -c product --tail=10
-   ```
-
-**Available GitHub Actions workflows:**
-
-
+   - **Step**: `1. Start Lab` - Initialize lab environment with Playwright automation (~2 min)
+   - **Step**: `2. Deploy Terraform Infrastructure` - Provisions EKS, VPC, ECR, SNS/SQS, DynamoDB (~15 min)
+   - **Step**: `3. Build and Deploy Microservices` - Builds and deploys services (~5 min)
+   - **Step**: `4. Test and Collect Logs` - Comprehensive testing and log collection (~2 min)
+   - **Verify**: Downloads logs as artifact (30-day retention) with detailed test results and service logs
 
 That's it! Your microservices are now running on EKS with Dapr pub/sub messaging. 🚀
+
+   <img src="docs/media/workflows-runs.png" alt="GitHub Actions Runs" width="600" />
+
 
 For detailed setup, local development, and troubleshooting, continue reading below.
 
@@ -198,8 +185,7 @@ flowchart TB
 │       ├── start-lab.yml                    # 1. Lab initialization workflow
 │       ├── terraform-deploy.yml             # 2. Infrastructure deployment workflow
 │       ├── deploy-services.yml              # 3. Microservices deployment workflow
-│       ├── test-and-logs.yml                # 4. Testing and log collection workflow
-│       └── scheduled-ops-deployment.yml     # Scheduled full deployment (disabled by default)
+│       └── test-and-logs.yml                # 4. Testing and log collection workflow
 ├── src/
 │   ├── eks-dapr-microservices/
 │   │   ├── product-service/
