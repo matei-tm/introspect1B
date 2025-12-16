@@ -11,6 +11,13 @@ on:
           - all
           - product-service
           - order-service
+  workflow_call:
+    inputs:
+      service:
+        description: 'Service to deploy'
+        required: false
+        default: 'all'
+        type: string
 
 
 env:

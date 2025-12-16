@@ -12,6 +12,13 @@ on:
           - plan
           - apply
           - destroy
+  workflow_call:
+    inputs:
+      action:
+        description: 'Terraform action to perform'
+        required: false
+        default: 'apply'
+        type: string
 
 
 env:

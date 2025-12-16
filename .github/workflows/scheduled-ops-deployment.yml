@@ -1,0 +1,47 @@
+name: Scheduled Full Deployment
+
+on:
+  schedule:
+    # Runs at 3:00 AM GMT every day
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    # Allow manual triggering for testing
+
+jobs:
+  start-lab:
+    name: 1. Start Lab
+    uses: ./.github/workflows/start-lab.yml
+    secrets: inherit
+
+  terraform-deploy:
+    name: 2. Deploy Terraform Infrastructure
+    needs: start-lab
+    uses: ./.github/workflows/terraform-deploy.yml
+    secrets: inherit
+    with:
+      action: apply
+
+  deploy-services:
+    name: 3. Build and Deploy Microservices
+    needs: terraform-deploy
+    uses: ./.github/workflows/deploy-services.yml
+    secrets: inherit
+    with:
+      service: all
+
+  deployment-summary:
+    name: Deployment Summary
+    needs: [start-lab, terraform-deploy, deploy-services]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# Scheduled Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered at:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Job Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Start Lab: ${{ needs.start-lab.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Terraform Deploy: ${{ needs.terraform-deploy.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Deploy Services: ${{ needs.deploy-services.result }}" >> $GITHUB_STEP_SUMMARY
