@@ -14,6 +14,8 @@
 
 A complete demonstration of containerized microservices deployed on Amazon EKS with Dapr sidecars implementing pub/sub messaging patterns using AWS SNS/SQS for real-time event-driven interactions.
 
+This project is part of the [CTS - Architecting for Performance CNA Level 2 – Intermediate (GGM)](https://www.niit.com/) course.
+
 ## ⚡ TL;DR - Quick Start
 
 **Get up and running in minutes using GitHub Actions automation!**
@@ -58,7 +60,9 @@ For detailed setup, local development, and troubleshooting, continue reading the
 
 ## 📝 License
 
-This project is for educational purposes as part of Introspect1B for Cloud Native Architecture Level 2.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+This project is for educational purposes as part of the [CTS - Architecting for Performance CNA Level 2 – Intermediate (GGM)](https://www.niit.com/) course.
 
 ## 🤝 Contributing
 
