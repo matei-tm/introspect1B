@@ -1,5 +1,10 @@
 ﻿# Cloud Native Architecture Course - Introspect 1B: EKS Dapr Microservices
 
+[![1. Start Lab](https://github.com/matei-tm/introspect1B/actions/workflows/start-lab.yml/badge.svg?branch=develop)](https://github.com/matei-tm/introspect1B/actions/workflows/start-lab.yml)
+[![2. Deploy Terraform](https://github.com/matei-tm/introspect1B/actions/workflows/terraform-deploy.yml/badge.svg?branch=develop)](https://github.com/matei-tm/introspect1B/actions/workflows/terraform-deploy.yml)
+[![3. Deploy Services](https://github.com/matei-tm/introspect1B/actions/workflows/deploy-services.yml/badge.svg?branch=develop)](https://github.com/matei-tm/introspect1B/actions/workflows/deploy-services.yml)
+[![4. Test and Logs](https://github.com/matei-tm/introspect1B/actions/workflows/test-and-logs.yml/badge.svg?branch=develop)](https://github.com/matei-tm/introspect1B/actions/workflows/test-and-logs.yml)
+
 - [Cloud Native Architecture Course - Introspect 1B: EKS Dapr Microservices](#cloud-native-architecture-course---introspect-1b-eks-dapr-microservices)
   - [⚡ TL;DR - Quick Start](#-tldr---quick-start)
   - [📚 Wiki](#-wiki)
