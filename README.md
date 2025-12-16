@@ -71,7 +71,7 @@ A complete demonstration of containerized microservices deployed on Amazon EKS w
    ```
    AWS_ACCESS_KEY_ID       = <your-aws-access-key>
    AWS_SECRET_ACCESS_KEY   = <your-aws-secret-key>
-   ECR_REGISTRY            = <optional: your-account-id.dkr.ecr.region.amazonaws.com>
+   ECR_REGISTRY            = <mandatory: your-account-id.dkr.ecr.region.amazonaws.com>
    SITE_USER               = <your-lab-username>
    SITE_PASSWORD           = <your-lab-password>
    ```
@@ -374,7 +374,7 @@ terraform apply
 2. Configure repository secrets:
    - `AWS_ACCESS_KEY_ID`
    - `AWS_SECRET_ACCESS_KEY`
-   - `ECR_REGISTRY` (optional, defaults to `322230759107.dkr.ecr.us-east-1.amazonaws.com`)
+   - `ECR_REGISTRY` (mandatory, unique value can be `<your-account-id>.dkr.ecr.us-east-1.amazonaws.com`)
 3. Trigger the workflow:
    - **Automatic**: Push changes to `product-service/` or `order-service/`
    - **Manual**: Run workflow via GitHub Actions UI
