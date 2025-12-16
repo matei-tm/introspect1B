@@ -214,12 +214,14 @@ resource "null_resource" "cloudwatch_rbac" {
   }
 
   depends_on = [
-    kubernetes_service_account.cloudwatch_agent,
-    kubernetes_service_account.fluent_bit
+    null_resource.update_kubeconfig
   ]
 
   triggers = {
-    always_run = timestamp()
+    manifest_sha = sha256(<<-EOT
+      CloudWatch RBAC manifest
+    EOT
+    )
   }
 }
 
