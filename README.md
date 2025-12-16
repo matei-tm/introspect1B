@@ -76,12 +76,28 @@ A complete demonstration of containerized microservices deployed on Amazon EKS w
    SITE_PASSWORD           = <your-lab-password>
    ```
 
-3. **Run the workflows** (Actions tab) in order:
+3. **Configure Repository Variables** (Settings → Secrets and variables → Actions → Variables tab → New repository variable):
+   ```
+   ENABLE_SCHEDULED_DEPLOYMENT = true    # Optional: Enable scheduled deployments (runs at 1:30 AM GMT daily)
+   ```
+   > **Note**: If not set, scheduled deployments will be disabled by default. You can still run the workflow manually.
+
+4. **Run the workflows** (Actions tab):
+   
+   **Option A - Individual Workflows (recommended for first-time setup):**
    - **Step 1**: `1. Start Lab` - Initialize lab environment with Playwright automation (~2 min)
    - **Step 2**: `2. Deploy Terraform Infrastructure` - Provisions EKS, VPC, ECR, SNS/SQS, DynamoDB (~15 min)
    - **Step 3**: `3. Build and Deploy Microservices` - Builds and deploys services (~5 min)
+   
+   **Option B - All-in-One Workflow:**
+   - **Manual Run**: `Scheduled Operations - Full Deployment` - Runs all steps sequentially with retry logic (~25 min)
+   - **Scheduled Run**: Automatically runs daily if `ENABLE_SCHEDULED_DEPLOYMENT=true`
 
-4. **Verify deployment**:
+5. **Verify deployment** - Run the test and log collection workflow:
+   - **GitHub Actions**: `4. Test and Collect Logs` - Comprehensive testing and log collection (~2 min)
+   - Downloads logs as artifact (30-day retention) with detailed test results and service logs
+   
+   **Or verify manually via CLI**:
    ```bash
    aws eks update-kubeconfig --region us-east-1 --name dapr-demo-cluster
    kubectl get pods -n dapr-demo
@@ -90,7 +106,7 @@ A complete demonstration of containerized microservices deployed on Amazon EKS w
 
 **Available GitHub Actions workflows:**
 
-<img src="docs/media/workflow-list.png" alt="GitHub Actions Workflows" width="800" />
+<img src="docs/media/workflow-list.png" alt="GitHub Actions Workflows" width="200" />
 
 That's it! Your microservices are now running on EKS with Dapr pub/sub messaging. 🚀
 
