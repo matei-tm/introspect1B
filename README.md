@@ -31,13 +31,7 @@ This project is part of the [CTS - Architecting for Performance CNA Level 2 – 
    SITE_PASSWORD           = <your-lab-password>
    ```
 
-3. **Configure Repository Variables** (Settings → Secrets and variables → Actions → Variables tab → New repository variable):
-   ```
-   ENABLE_SCHEDULED_DEPLOYMENT = true    # Optional: Enable scheduled deployments based on the cron set on action scheduled-ops-deployment.yml
-   ```
-   > **Note**: If not set, scheduled deployments will be disabled by default. You can still run the workflow manually.
-
-4. **Run the workflows** (Actions tab):
+3. **Run the workflows** (Actions tab):
    **Available GitHub Actions workflows:**
 
    <img src="docs/media/workflow-list.png" alt="GitHub Actions Workflows" width="200" />
