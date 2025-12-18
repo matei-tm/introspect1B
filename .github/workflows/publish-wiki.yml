@@ -11,6 +11,8 @@ jobs:
   publish-wiki:
     name: Clone and Publish Wiki
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for creating releases
     
     steps:
       - name: Checkout main repository
@@ -230,20 +232,66 @@ jobs:
           retention-days: 90
           if-no-files-found: error
 
+      - name: Create release tag
+        id: create_tag
+        run: |
+          cd wiki-repo
+          TAG_NAME="wiki-$(date +'%Y.%m.%d-%H%M')"
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "📌 Release tag: $TAG_NAME"
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.create_tag.outputs.tag_name }}
+          release_name: Wiki Documentation ${{ steps.create_tag.outputs.tag_name }}
+          body: |
+            # Wiki Documentation
+            
+            **Generated:** $(date +'%Y-%m-%d %H:%M:%S UTC')
+            **Repository:** ${{ github.repository }}
+            
+            This release contains the complete wiki documentation in PDF format.
+            
+            ## 📄 Contents
+            
+            - `wiki-complete.pdf` - All wiki pages with table of contents
+            
+            ## 📊 Statistics
+            
+            - **Format:** PDF with clickable links and table of contents
+            - **Pages:** All wiki pages combined
+            - **Auto-generated:** Daily at 2:00 AM GMT and on-demand
+          draft: false
+          prerelease: false
+
+      - name: Upload PDF to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: wiki-repo/pdf-output/wiki-complete.pdf
+          asset_name: wiki-complete.pdf
+          asset_content_type: application/pdf
+
       - name: Create GitHub Step Summary
         run: |
           cd wiki-repo
           echo "# 📚 Wiki Documentation Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Successfully converted wiki to PDF" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Successfully converted wiki to PDF and published as release" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📊 Statistics" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Source Pages:** $(find . -name "*.md" -type f ! -name "combined.md" | wc -l)" >> $GITHUB_STEP_SUMMARY
           echo "- **PDF File:** \`wiki-complete.pdf\`" >> $GITHUB_STEP_SUMMARY
           echo "- **File Size:** $(ls -lh pdf-output/wiki-complete.pdf | awk '{print $5}')" >> $GITHUB_STEP_SUMMARY
-          echo "- **Artifact:** \`wiki-documentation-${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Retention:** 90 days" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release Tag:** \`${{ steps.create_tag.outputs.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact:** \`wiki-documentation-${{ github.run_number }}\` (90 days)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📄 Document Features" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -251,7 +299,13 @@ jobs:
           echo "- ✅ All wiki pages in one document" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Clickable hyperlinks" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Professional formatting" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Images and Mermaid diagrams" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔗 Access" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release:** [View Release](https://github.com/${{ github.repository }}/releases/tag/${{ steps.create_tag.outputs.tag_name }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Direct Download:** [wiki-complete.pdf](https://github.com/${{ github.repository }}/releases/download/${{ steps.create_tag.outputs.tag_name }}/wiki-complete.pdf)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "💡 **Tip:** Download the artifact to access the complete wiki documentation as a single PDF file." >> $GITHUB_STEP_SUMMARY
+          echo "💡 **Tip:** The PDF is permanently available via GitHub Releases and temporarily as a workflow artifact." >> $GITHUB_STEP_SUMMARY
