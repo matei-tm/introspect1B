@@ -62,34 +62,78 @@ jobs:
           mkdir -p pdf-output
           mkdir -p images
           
+          # Download all referenced images from URLs
+          echo "📥 Downloading images from URLs..."
+          find . -name "*.md" -type f | while read file; do
+            # Extract image URLs (both ![alt](url) and <img src="url">)
+            grep -oE '!\[.*\]\((https?://[^)]+)\)' "$file" | sed -E 's/!\[.*\]\(([^)]+)\)/\1/' | while read url; do
+              filename=$(basename "$url" | sed 's/[?#].*//')
+              echo "Downloading: $url -> images/$filename"
+              curl -sL "$url" -o "images/$filename" 2>&1 || echo "Failed to download $url"
+            done
+            
+            grep -oE '<img[^>]+src="(https?://[^"]+)"' "$file" | sed -E 's/.*src="([^"]+)".*/\1/' | while read url; do
+              filename=$(basename "$url" | sed 's/[?#].*//')
+              echo "Downloading: $url -> images/$filename"
+              curl -sL "$url" -o "images/$filename" 2>&1 || echo "Failed to download $url"
+            done
+          done
+          
+          # Replace image URLs with local paths
+          echo "🔄 Updating image references to local paths..."
+          find . -name "*.md" -type f | while read file; do
+            # Replace URL image references with local paths
+            sed -i.bak -E 's|!\[([^]]*)\]\((https?://[^)]+/([^/)]+))\)|![\1](images/\3)|g' "$file"
+            sed -i.bak -E 's|<img([^>]*)src="https?://[^"/]+/([^"]+)"([^>]*)>|<img\1src="images/\2"\3>|g' "$file"
+            rm -f "${file}.bak"
+          done
+          
           # Process Mermaid diagrams
           echo "🎨 Converting Mermaid diagrams to images..."
           counter=1
           find . -name "*.md" -type f | while read file; do
-            # Extract and convert mermaid diagrams
-            awk '/```mermaid/,/```/' "$file" | grep -v '```' > /tmp/mermaid_block.txt || true
-            if [ -s /tmp/mermaid_block.txt ]; then
-              echo "Found Mermaid diagram in $file"
-              mmdc -i /tmp/mermaid_block.txt -o "images/mermaid-${counter}.png" -b transparent 2>&1 || echo "Failed to convert diagram in $file"
-              counter=$((counter + 1))
+            # Count mermaid blocks in file
+            mermaid_count=$(grep -c '```mermaid' "$file" || echo "0")
+            if [ "$mermaid_count" -gt 0 ]; then
+              echo "Found $mermaid_count Mermaid diagram(s) in $file"
+              
+              # Extract each mermaid block
+              awk '/```mermaid/,/```/' "$file" | 
+              awk 'BEGIN {block=""} 
+                   /```mermaid/ {in_block=1; next} 
+                   /```/ && in_block {
+                     if (block != "") print block;
+                     block="";
+                     in_block=0;
+                     next
+                   }
+                   in_block {block = block $0 "\n"}' |
+              while IFS= read -r -d '' block || [ -n "$block" ]; do
+                if [ -n "$block" ]; then
+                  echo "$block" > "/tmp/mermaid_${counter}.mmd"
+                  mmdc -i "/tmp/mermaid_${counter}.mmd" -o "images/mermaid-${counter}.png" -b transparent 2>&1 || echo "Failed to convert diagram ${counter}"
+                  counter=$((counter + 1))
+                fi
+              done
             fi
           done
           
-          # Replace mermaid blocks with image references in markdown files
+          # Replace mermaid blocks with image references
           echo "🔄 Replacing Mermaid blocks with images..."
           counter=1
           find . -name "*.md" -type f | while read file; do
             if grep -q '```mermaid' "$file"; then
-              # Create a temporary file with mermaid blocks replaced
+              # Replace each mermaid block with image reference
               awk -v counter=$counter '
                 /```mermaid/ { 
-                  in_mermaid=1; 
-                  print "![Mermaid Diagram](images/mermaid-" counter ".png)";
+                  in_mermaid=1;
+                  img_path = "images/mermaid-" counter ".png";
+                  print "\n![Mermaid Diagram](" img_path ")\n";
                   counter++;
                   next;
                 }
                 /```/ && in_mermaid { 
-                  in_mermaid=0; 
+                  in_mermaid=0;
                   next;
                 }
                 !in_mermaid { print }
@@ -122,6 +166,10 @@ jobs:
             cat "$file" >> combined.md
             echo "" >> combined.md
           done
+          
+          # List downloaded images for debugging
+          echo "📸 Images available for PDF:"
+          ls -lh images/ || echo "No images directory"
           
           # Convert combined markdown to PDF with image support
           echo "📄 Converting to PDF..."
