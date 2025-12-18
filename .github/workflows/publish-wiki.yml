@@ -54,23 +54,7 @@ jobs:
           # Create output directory
           mkdir -p pdf-output
           
-          # Convert each markdown file to PDF
-          find . -name "*.md" -type f | sort | while read file; do
-            filename=$(basename "$file" .md)
-            echo "Converting: $file -> pdf-output/${filename}.pdf"
-            pandoc "$file" \
-              -o "pdf-output/${filename}.pdf" \
-              --pdf-engine=xelatex \
-              -V geometry:margin=1in \
-              -V colorlinks=true \
-              -V linkcolor=blue \
-              -V urlcolor=blue \
-              --metadata title="${filename}" \
-              2>&1 || echo "⚠️ Failed to convert $file"
-          done
-          
           # Create a combined PDF with all pages
-          echo ""
           echo "📚 Creating combined PDF..."
           
           # Combine all markdown files into one
@@ -111,7 +95,7 @@ jobs:
           
           echo ""
           echo "✅ PDF conversion complete"
-          echo "📊 PDFs generated: $(ls -1 pdf-output/*.pdf | wc -l)"
+          ls -lh pdf-output/wiki-complete.pdf
 
       - name: Create wiki archive
         run: |
@@ -124,52 +108,66 @@ jobs:
           # Create a summary file in PDF output
           cat > pdf-output/README.md << 'EOF'
           # Wiki Archive Summary
+          # Create a summary file in PDF output
+          cat > pdf-output/README.md << 'EOF'
+          # Wiki Archive Summary
           
           **Generated:** $(date +'%Y-%m-%d %H:%M:%S UTC')
           **Repository:** ${{ github.repository }}
           **Branch:** ${{ github.ref_name }}
           
-          ## Pages Included
+          ## PDF Files Included
+          
+          - `wiki-complete.pdf` - Combined PDF with all wiki pages and table of contents
+          
+          ### Individual Page PDFs:
           
           EOF
           
-          # List all markdown files
-          find . -name "*.md" -type f ! -name "WIKI_SUMMARY.md" | sort | while read file; do
-            echo "- \`${file#./}\`" >> WIKI_SUMMARY.md
+          # List all PDF files
+          ls -1 pdf-output/*.pdf | grep -v "wiki-complete.pdf" | while read file; do
+            echo "- \`$(basename "$file")\`" >> pdf-output/README.md
           done
           
-          echo "" >> WIKI_SUMMARY.md
-          echo "---" >> WIKI_SUMMARY.md
-          echo "" >> WIKI_SUMMARY.md
-          echo "Total pages: $(find . -name "*.md" -type f ! -name "WIKI_SUMMARY.md" | wc -l)" >> WIKI_SUMMARY.md
+          echo "" >> pdf-output/README.md
+          echo "---" >> pdf-output/README.md
+          echo "" >> pdf-output/README.md
+          echo "Total PDFs: $(ls -1 pdf-output/*.pdf | wc -l)" >> pdf-output/README.md
 
-      - name: Upload wiki artifact
+      - name: Upload wiki PDF artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wiki-archive-${{ github.run_number }}
-          path: wiki-repo/
+          name: wiki-pdf-archive-${{ github.run_number }}
+          path: wiki-repo/pdf-output/
           retention-days: 90
           if-no-files-found: error
 
       - name: Create GitHub Step Summary
         run: |
           cd wiki-repo
-          echo "# 📚 Wiki Archive Published" >> $GITHUB_STEP_SUMMARY
+          echo "# 📚 Wiki PDF Archive Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Successfully archived wiki pages" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Successfully converted wiki pages to PDF" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📊 Statistics" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Pages:** $(find . -name "*.md" -type f ! -name "WIKI_SUMMARY.md" | wc -l)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Artifact:** \`wiki-archive-${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Source Pages:** $(find . -name "*.md" -type f ! -name "combined.md" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- **PDF Files:** $(ls -1 pdf-output/*.pdf | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact:** \`wiki-pdf-archive-${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Retention:** 90 days" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 📋 Pages Included" >> $GITHUB_STEP_SUMMARY
+          echo "## 📄 PDF Files" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          find . -name "*.md" -type f ! -name "WIKI_SUMMARY.md" | sort | while read file; do
-            echo "- \`${file#./}\`" >> $GITHUB_STEP_SUMMARY
+          echo "### Combined Documentation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- 📘 \`wiki-complete.pdf\` - All pages with table of contents" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Individual Pages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          ls -1 pdf-output/*.pdf | grep -v "wiki-complete.pdf" | while read file; do
+            echo "- 📄 \`$(basename "$file")\`" >> $GITHUB_STEP_SUMMARY
           done
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "💡 **Tip:** Download the artifact from the workflow run to access all wiki pages offline." >> $GITHUB_STEP_SUMMARY
+          echo "💡 **Tip:** Download the artifact to access all wiki pages as PDF files. The \`wiki-complete.pdf\` contains all pages in a single document with a table of contents." >> $GITHUB_STEP_SUMMARY
