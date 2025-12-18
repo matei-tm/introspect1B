@@ -64,8 +64,15 @@ jobs:
           mkdir -p pdf-output
           mkdir -p images
           
-          # Download all referenced images from URLs
-          echo "📥 Downloading images from URLs..."
+          # Copy existing images from docs/media if it exists
+          if [ -d "docs/media" ]; then
+            echo "📁 Copying images from docs/media..."
+            cp -r docs/media/* images/ 2>/dev/null || echo "No files in docs/media to copy"
+            ls -la images/
+          fi
+          
+          # Download all referenced images from URLs (external images)
+          echo "📥 Downloading external images from URLs..."
           find . -name "*.md" -type f | while read file; do
             # Extract image URLs (both ![alt](url) and <img src="url">)
             grep -oE '!\[.*\]\((https?://[^)]+)\)' "$file" | sed -E 's/!\[.*\]\(([^)]+)\)/\1/' | while read url; do
@@ -81,12 +88,21 @@ jobs:
             done
           done
           
-          # Replace image URLs with local paths
+          # Replace various image path formats with local paths
           echo "🔄 Updating image references to local paths..."
           find . -name "*.md" -type f | while read file; do
+            # Replace docs/media/ paths with images/
+            sed -i.bak -E 's|!\[([^]]*)\]\(docs/media/([^)]+)\)|![\1](images/\2)|g' "$file"
+            sed -i.bak -E 's|<img([^>]*)src="docs/media/([^"]+)"([^>]*)>|<img\1src="images/\2"\3>|g' "$file"
+            
+            # Replace /docs/media/ paths with images/
+            sed -i.bak -E 's|!\[([^]]*)\]\(/docs/media/([^)]+)\)|![\1](images/\2)|g' "$file"
+            sed -i.bak -E 's|<img([^>]*)src="/docs/media/([^"]+)"([^>]*)>|<img\1src="images/\2"\3>|g' "$file"
+            
             # Replace URL image references with local paths
             sed -i.bak -E 's|!\[([^]]*)\]\((https?://[^)]+/([^/)]+))\)|![\1](images/\3)|g' "$file"
             sed -i.bak -E 's|<img([^>]*)src="https?://[^"/]+/([^"]+)"([^>]*)>|<img\1src="images/\2"\3>|g' "$file"
+            
             rm -f "${file}.bak"
           done
           
