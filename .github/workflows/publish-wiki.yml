@@ -39,22 +39,66 @@ jobs:
 
       - name: Install dependencies
         run: |
-          echo "📦 Installing Pandoc and LaTeX..."
+          echo "📦 Installing dependencies..."
           sudo apt-get update
           sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic
+          
+          # Install Node.js for Mermaid CLI
+          curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+          
+          # Install mermaid-cli for diagram conversion
+          sudo npm install -g @mermaid-js/mermaid-cli
+          
+          # Install Playwright for mermaid-cli (required for rendering)
+          sudo npx playwright install --with-deps chromium
 
       - name: Convert wiki to PDF
         run: |
           cd wiki-repo
-          echo "🔄 Converting wiki pages to PDF..."
-          
-          # Create a timestamp
-          TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')
+          echo "🔄 Preparing wiki for PDF conversion..."
           
           # Create output directory
           mkdir -p pdf-output
+          mkdir -p images
           
-          # Create a combined PDF with all pages
+          # Process Mermaid diagrams
+          echo "🎨 Converting Mermaid diagrams to images..."
+          counter=1
+          find . -name "*.md" -type f | while read file; do
+            # Extract and convert mermaid diagrams
+            awk '/```mermaid/,/```/' "$file" | grep -v '```' > /tmp/mermaid_block.txt || true
+            if [ -s /tmp/mermaid_block.txt ]; then
+              echo "Found Mermaid diagram in $file"
+              mmdc -i /tmp/mermaid_block.txt -o "images/mermaid-${counter}.png" -b transparent 2>&1 || echo "Failed to convert diagram in $file"
+              counter=$((counter + 1))
+            fi
+          done
+          
+          # Replace mermaid blocks with image references in markdown files
+          echo "🔄 Replacing Mermaid blocks with images..."
+          counter=1
+          find . -name "*.md" -type f | while read file; do
+            if grep -q '```mermaid' "$file"; then
+              # Create a temporary file with mermaid blocks replaced
+              awk -v counter=$counter '
+                /```mermaid/ { 
+                  in_mermaid=1; 
+                  print "![Mermaid Diagram](images/mermaid-" counter ".png)";
+                  counter++;
+                  next;
+                }
+                /```/ && in_mermaid { 
+                  in_mermaid=0; 
+                  next;
+                }
+                !in_mermaid { print }
+              ' "$file" > "${file}.tmp"
+              mv "${file}.tmp" "$file"
+              counter=$((counter + 1))
+            fi
+          done
+          
           echo "📚 Creating combined PDF..."
           
           # Combine all markdown files into one
@@ -79,7 +123,8 @@ jobs:
             echo "" >> combined.md
           done
           
-          # Convert combined markdown to PDF
+          # Convert combined markdown to PDF with image support
+          echo "📄 Converting to PDF..."
           pandoc combined.md \
             -o "pdf-output/wiki-complete.pdf" \
             --pdf-engine=xelatex \
@@ -88,6 +133,7 @@ jobs:
             -V linkcolor=blue \
             -V urlcolor=blue \
             --toc \
+            --resource-path=.:images \
             --metadata title="Wiki Documentation" \
             --metadata author="${{ github.repository }}" \
             --metadata date="$(date +'%Y-%m-%d')" \
