@@ -19,9 +19,11 @@ jobs:
           path: main-repo
 
       - name: Clone wiki repository
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "📚 Cloning wiki repository..."
-          git clone https://github.com/${{ github.repository }}.wiki.git wiki-repo || {
+          git clone https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.wiki.git wiki-repo || {
             echo "⚠️ Wiki repository not found or not initialized"
             echo "To initialize the wiki, visit: https://github.com/${{ github.repository }}/wiki"
             exit 1
