@@ -37,16 +37,92 @@ jobs:
           echo ""
           echo "📊 Total pages: $(find . -name "*.md" -type f | wc -l)"
 
-      - name: Create wiki archive
+      - name: Install dependencies
+        run: |
+          echo "📦 Installing Pandoc and LaTeX..."
+          sudo apt-get update
+          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic
+
+      - name: Convert wiki to PDF
         run: |
           cd wiki-repo
-          echo "📦 Creating wiki archive..."
+          echo "🔄 Converting wiki pages to PDF..."
           
           # Create a timestamp
           TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')
           
-          # Create a summary file
-          cat > WIKI_SUMMARY.md << 'EOF'
+          # Create output directory
+          mkdir -p pdf-output
+          
+          # Convert each markdown file to PDF
+          find . -name "*.md" -type f | sort | while read file; do
+            filename=$(basename "$file" .md)
+            echo "Converting: $file -> pdf-output/${filename}.pdf"
+            pandoc "$file" \
+              -o "pdf-output/${filename}.pdf" \
+              --pdf-engine=xelatex \
+              -V geometry:margin=1in \
+              -V colorlinks=true \
+              -V linkcolor=blue \
+              -V urlcolor=blue \
+              --metadata title="${filename}" \
+              2>&1 || echo "⚠️ Failed to convert $file"
+          done
+          
+          # Create a combined PDF with all pages
+          echo ""
+          echo "📚 Creating combined PDF..."
+          
+          # Combine all markdown files into one
+          echo "# Wiki Documentation" > combined.md
+          echo "" >> combined.md
+          echo "**Generated:** $(date +'%Y-%m-%d %H:%M:%S UTC')" >> combined.md
+          echo "" >> combined.md
+          echo "**Repository:** ${{ github.repository }}" >> combined.md
+          echo "" >> combined.md
+          echo "---" >> combined.md
+          echo "" >> combined.md
+          
+          # Append all markdown files
+          find . -name "*.md" -type f ! -name "combined.md" | sort | while read file; do
+            filename=$(basename "$file" .md)
+            echo "" >> combined.md
+            echo "\\newpage" >> combined.md
+            echo "" >> combined.md
+            echo "# ${filename}" >> combined.md
+            echo "" >> combined.md
+            cat "$file" >> combined.md
+            echo "" >> combined.md
+          done
+          
+          # Convert combined markdown to PDF
+          pandoc combined.md \
+            -o "pdf-output/wiki-complete.pdf" \
+            --pdf-engine=xelatex \
+            -V geometry:margin=1in \
+            -V colorlinks=true \
+            -V linkcolor=blue \
+            -V urlcolor=blue \
+            --toc \
+            --metadata title="Wiki Documentation" \
+            --metadata author="${{ github.repository }}" \
+            --metadata date="$(date +'%Y-%m-%d')" \
+            2>&1 || echo "⚠️ Failed to create combined PDF"
+          
+          echo ""
+          echo "✅ PDF conversion complete"
+          echo "📊 PDFs generated: $(ls -1 pdf-output/*.pdf | wc -l)"
+
+      - name: Create wiki archive
+        run: |
+          cd wiki-repo
+          echo "📦 Creating archive summary..."
+          
+          # Create a timestamp
+          TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')
+          
+          # Create a summary file in PDF output
+          cat > pdf-output/README.md << 'EOF'
           # Wiki Archive Summary
           
           **Generated:** $(date +'%Y-%m-%d %H:%M:%S UTC')
