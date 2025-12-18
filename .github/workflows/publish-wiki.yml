@@ -1,0 +1,97 @@
+name: Publish Wiki
+
+on:
+  workflow_dispatch:
+    # Allow manual triggering
+  schedule:
+    # Run daily at 2:00 AM GMT
+    - cron: '0 2 * * *'
+
+jobs:
+  publish-wiki:
+    name: Clone and Publish Wiki
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@v4
+        with:
+          path: main-repo
+
+      - name: Clone wiki repository
+        run: |
+          echo "📚 Cloning wiki repository..."
+          git clone https://github.com/${{ github.repository }}.wiki.git wiki-repo || {
+            echo "⚠️ Wiki repository not found or not initialized"
+            echo "To initialize the wiki, visit: https://github.com/${{ github.repository }}/wiki"
+            exit 1
+          }
+
+      - name: List wiki pages
+        run: |
+          echo "📋 Wiki pages found:"
+          cd wiki-repo
+          find . -name "*.md" -type f | sort
+          echo ""
+          echo "📊 Total pages: $(find . -name "*.md" -type f | wc -l)"
+
+      - name: Create wiki archive
+        run: |
+          cd wiki-repo
+          echo "📦 Creating wiki archive..."
+          
+          # Create a timestamp
+          TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')
+          
+          # Create a summary file
+          cat > WIKI_SUMMARY.md << 'EOF'
+          # Wiki Archive Summary
+          
+          **Generated:** $(date +'%Y-%m-%d %H:%M:%S UTC')
+          **Repository:** ${{ github.repository }}
+          **Branch:** ${{ github.ref_name }}
+          
+          ## Pages Included
+          
+          EOF
+          
+          # List all markdown files
+          find . -name "*.md" -type f ! -name "WIKI_SUMMARY.md" | sort | while read file; do
+            echo "- \`${file#./}\`" >> WIKI_SUMMARY.md
+          done
+          
+          echo "" >> WIKI_SUMMARY.md
+          echo "---" >> WIKI_SUMMARY.md
+          echo "" >> WIKI_SUMMARY.md
+          echo "Total pages: $(find . -name "*.md" -type f ! -name "WIKI_SUMMARY.md" | wc -l)" >> WIKI_SUMMARY.md
+
+      - name: Upload wiki artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wiki-archive-${{ github.run_number }}
+          path: wiki-repo/
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Create GitHub Step Summary
+        run: |
+          cd wiki-repo
+          echo "# 📚 Wiki Archive Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Successfully archived wiki pages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📊 Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Pages:** $(find . -name "*.md" -type f ! -name "WIKI_SUMMARY.md" | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact:** \`wiki-archive-${{ github.run_number }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Retention:** 90 days" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📋 Pages Included" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          find . -name "*.md" -type f ! -name "WIKI_SUMMARY.md" | sort | while read file; do
+            echo "- \`${file#./}\`" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "💡 **Tip:** Download the artifact from the workflow run to access all wiki pages offline." >> $GITHUB_STEP_SUMMARY
