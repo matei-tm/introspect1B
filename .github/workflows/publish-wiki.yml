@@ -193,8 +193,7 @@ jobs:
             - ✅ All wiki pages combined
             - ✅ Clickable hyperlinks
             - ✅ Professional formatting
-
-            - ⚠️ Images and Mermaid diagrams (work in progress. They are available in the source markdown files.)
+            - ✅ Images and Mermaid diagrams
 
             ## 🔗 Download
             
@@ -225,7 +224,7 @@ jobs:
           echo "- ✅ All wiki pages in one document" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Clickable hyperlinks" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Professional formatting" >> $GITHUB_STEP_SUMMARY
-          echo "- ⚠️ Images and Mermaid diagrams (work in progress. They are available in the source markdown files.)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Images and Mermaid diagrams"
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🔗 Access" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
