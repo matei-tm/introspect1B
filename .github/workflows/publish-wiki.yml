@@ -235,65 +235,65 @@ jobs:
           
           # Create LaTeX header file for comprehensive Unicode support
           cat > header.tex << 'HEADER'
-\usepackage{fontspec}
-\usepackage{newunicodechar}
-\setmainfont{Noto Sans}
-\setmonofont{DejaVu Sans Mono}[Scale=0.9]
-\newfontfamily{\fallbackfont}{Noto Color Emoji}[Renderer=HarfBuzz]
-\newfontfamily{\boxfont}{DejaVu Sans Mono}
-\DeclareTextFontCommand{\textfallback}{\fallbackfont}
-\DeclareTextFontCommand{\textbox}{\boxfont}
-
-% Emoji mappings
-\newunicodechar{🚀}{\textfallback{🚀}}
-\newunicodechar{🔧}{\textfallback{🔧}}
-\newunicodechar{📦}{\textfallback{📦}}
-\newunicodechar{📚}{\textfallback{📚}}
-\newunicodechar{💰}{\textfallback{💰}}
-\newunicodechar{🏗}{\textfallback{🏗}}
-\newunicodechar{✅}{\textfallback{✅}}
-\newunicodechar{❌}{\textfallback{❌}}
-\newunicodechar{⚠}{\textfallback{⚠}}
-\newunicodechar{📋}{\textfallback{📋}}
-\newunicodechar{📊}{\textfallback{📊}}
-\newunicodechar{🔍}{\textfallback{🔍}}
-\newunicodechar{🎨}{\textfallback{🎨}}
-\newunicodechar{🔄}{\textfallback{🔄}}
-\newunicodechar{📸}{\textfallback{📸}}
-\newunicodechar{📄}{\textfallback{📄}}
-\newunicodechar{🖼}{\textfallback{🖼}}
-\newunicodechar{🔑}{\textfallback{🔑}}
-\newunicodechar{📐}{\textfallback{📐}}
-\newunicodechar{🔐}{\textfallback{🔐}}
-\newunicodechar{🎯}{\textfallback{🎯}}
-\newunicodechar{💻}{\textfallback{💻}}
-\newunicodechar{🐛}{\textfallback{🐛}}
-\newunicodechar{📈}{\textfallback{📈}}
-\newunicodechar{📉}{\textfallback{📉}}
-\newunicodechar{📱}{\textfallback{📱}}
-\newunicodechar{🎚}{\textfallback{🎚}}
-\newunicodechar{🎛}{\textfallback{🎛}}
-\newunicodechar{🔴}{\textfallback{🔴}}
-\newunicodechar{🔵}{\textfallback{🔵}}
-\newunicodechar{🟡}{\textfallback{🟡}}
-\newunicodechar{🟢}{\textfallback{🟢}}
-\newunicodechar{🟠}{\textfallback{🟠}}
-\newunicodechar{🆘}{\textfallback{🆘}}
-\newunicodechar{🧹}{\textfallback{🧹}}
-\newunicodechar{🔗}{\textfallback{🔗}}
-\newunicodechar{📝}{\textfallback{📝}}
-\newunicodechar{🤝}{\textfallback{🤝}}
-\newunicodechar{👂}{\textfallback{👂}}
-\newunicodechar{⏱}{\textfallback{⏱}}
-\newunicodechar{⃣}{\textfallback{⃣}}
-\newunicodechar{✓}{\textfallback{✓}}
-
-% Box drawing characters for code blocks
-\newunicodechar{├}{\textbox{├}}
-\newunicodechar{─}{\textbox{─}}
-\newunicodechar{└}{\textbox{└}}
-\newunicodechar{│}{\textbox{│}}
-HEADER
+          \usepackage{fontspec}
+          \usepackage{newunicodechar}
+          \setmainfont{Noto Sans}
+          \setmonofont{DejaVu Sans Mono}[Scale=0.9]
+          \newfontfamily{\fallbackfont}{Noto Color Emoji}[Renderer=HarfBuzz]
+          \newfontfamily{\boxfont}{DejaVu Sans Mono}
+          \DeclareTextFontCommand{\textfallback}{\fallbackfont}
+          \DeclareTextFontCommand{\textbox}{\boxfont}
+          
+          % Emoji mappings
+          \newunicodechar{🚀}{\textfallback{🚀}}
+          \newunicodechar{🔧}{\textfallback{🔧}}
+          \newunicodechar{📦}{\textfallback{📦}}
+          \newunicodechar{📚}{\textfallback{📚}}
+          \newunicodechar{💰}{\textfallback{💰}}
+          \newunicodechar{🏗}{\textfallback{🏗}}
+          \newunicodechar{✅}{\textfallback{✅}}
+          \newunicodechar{❌}{\textfallback{❌}}
+          \newunicodechar{⚠}{\textfallback{⚠}}
+          \newunicodechar{📋}{\textfallback{📋}}
+          \newunicodechar{📊}{\textfallback{📊}}
+          \newunicodechar{🔍}{\textfallback{🔍}}
+          \newunicodechar{🎨}{\textfallback{🎨}}
+          \newunicodechar{🔄}{\textfallback{🔄}}
+          \newunicodechar{📸}{\textfallback{📸}}
+          \newunicodechar{📄}{\textfallback{📄}}
+          \newunicodechar{🖼}{\textfallback{🖼}}
+          \newunicodechar{🔑}{\textfallback{🔑}}
+          \newunicodechar{📐}{\textfallback{📐}}
+          \newunicodechar{🔐}{\textfallback{🔐}}
+          \newunicodechar{🎯}{\textfallback{🎯}}
+          \newunicodechar{💻}{\textfallback{💻}}
+          \newunicodechar{🐛}{\textfallback{🐛}}
+          \newunicodechar{📈}{\textfallback{📈}}
+          \newunicodechar{📉}{\textfallback{📉}}
+          \newunicodechar{📱}{\textfallback{📱}}
+          \newunicodechar{🎚}{\textfallback{🎚}}
+          \newunicodechar{🎛}{\textfallback{🎛}}
+          \newunicodechar{🔴}{\textfallback{🔴}}
+          \newunicodechar{🔵}{\textfallback{🔵}}
+          \newunicodechar{🟡}{\textfallback{🟡}}
+          \newunicodechar{🟢}{\textfallback{🟢}}
+          \newunicodechar{🟠}{\textfallback{🟠}}
+          \newunicodechar{🆘}{\textfallback{🆘}}
+          \newunicodechar{🧹}{\textfallback{🧹}}
+          \newunicodechar{🔗}{\textfallback{🔗}}
+          \newunicodechar{📝}{\textfallback{📝}}
+          \newunicodechar{🤝}{\textfallback{🤝}}
+          \newunicodechar{👂}{\textfallback{👂}}
+          \newunicodechar{⏱}{\textfallback{⏱}}
+          \newunicodechar{⃣}{\textfallback{⃣}}
+          \newunicodechar{✓}{\textfallback{✓}}
+          
+          % Box drawing characters for code blocks
+          \newunicodechar{├}{\textbox{├}}
+          \newunicodechar{─}{\textbox{─}}
+          \newunicodechar{└}{\textbox{└}}
+          \newunicodechar{│}{\textbox{│}}
+          HEADER
           
           pandoc combined.md \
             -o "pdf-output/wiki-complete.pdf" \
