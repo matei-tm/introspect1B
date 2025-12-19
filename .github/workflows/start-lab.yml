@@ -32,10 +32,10 @@ jobs:
       - name: Add all screenshots to summary
         if: always()
         run: |
-          echo "## Failed screenshots" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Screenshots" >> "$GITHUB_STEP_SUMMARY"
           shopt -s nullglob
           for f in src/labinit/test-results/**/*.png; do
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "### $(basename "$f")" >> "$GITHUB_STEP_SUMMARY"
-            echo "![creenshot" >> "$GITHUB_STEP_SUMMARY"
+            echo "![screenshot]($f)" >> "$GITHUB_STEP_SUMMARY"
           done
