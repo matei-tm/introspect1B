@@ -43,7 +43,7 @@ jobs:
         run: |
           echo "📦 Installing dependencies..."
           sudo apt-get update
-          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic
+          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic fonts-noto-color-emoji fonts-noto
           
           # Install Node.js for Mermaid CLI
           curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -198,6 +198,8 @@ jobs:
             -V colorlinks=true \
             -V linkcolor=blue \
             -V urlcolor=blue \
+            -V mainfont="Noto Sans" \
+            -V CJKmainfont="Noto Sans CJK SC" \
             --toc \
             --resource-path=.:images \
             --metadata title="Wiki Documentation" \
