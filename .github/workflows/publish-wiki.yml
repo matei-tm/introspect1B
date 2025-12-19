@@ -63,6 +63,19 @@ jobs:
           
           # Create output directory
           mkdir -p pdf-output
+          mkdir -p images
+          
+          echo "🖼️ Converting SVG images to PNG for better text rendering..."
+          # Find all SVG files and convert them to PNG
+          find . -name "*.svg" -type f | while read svgfile; do
+            pngfile="${svgfile%.svg}.png"
+            echo "Converting: $svgfile -> $pngfile"
+            rsvg-convert -f png -d 300 -p 300 "$svgfile" -o "$pngfile" || echo "Failed to convert $svgfile"
+          done
+          
+          echo "🔄 Replacing SVG references with PNG in markdown..."
+          # Replace .svg with .png in all markdown files
+          find . -name "*.md" -type f -exec sed -i 's/\.svg/.png/g' {} \;
           
           # Create a combined PDF with all pages
           echo "📚 Creating combined PDF..."
