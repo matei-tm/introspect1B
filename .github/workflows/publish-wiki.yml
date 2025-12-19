@@ -45,7 +45,7 @@ jobs:
         run: |
           echo "📦 Installing dependencies..."
           sudo apt-get update
-          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic fonts-noto-color-emoji fonts-noto
+          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic texlive-lang-chinese fonts-noto-color-emoji fonts-noto
           
           # Install Node.js for Mermaid CLI
           curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -110,56 +110,69 @@ jobs:
           
           # Process Mermaid diagrams
           echo "🎨 Converting Mermaid diagrams to images..."
+          
+          # First, extract all mermaid blocks to separate files
           counter=1
-          find . -name "*.md" -type f | while read file; do
-            # Count mermaid blocks in file
-            mermaid_count=$(grep -c '```mermaid' "$file" || echo "0")
-            if [ "$mermaid_count" -gt 0 ]; then
-              echo "Found $mermaid_count Mermaid diagram(s) in $file"
+          for file in $(find . -name "*.md" -type f | sort); do
+            if grep -q '```mermaid' "$file"; then
+              echo "Processing Mermaid diagrams in $file"
               
-              # Extract each mermaid block
-              awk '/```mermaid/,/```/' "$file" | 
-              awk 'BEGIN {block=""} 
-                   /```mermaid/ {in_block=1; next} 
-                   /```/ && in_block {
-                     if (block != "") print block;
-                     block="";
-                     in_block=0;
-                     next
-                   }
-                   in_block {block = block $0 "\n"}' |
-              while IFS= read -r -d '' block || [ -n "$block" ]; do
-                if [ -n "$block" ]; then
-                  echo "$block" > "/tmp/mermaid_${counter}.mmd"
-                  mmdc -i "/tmp/mermaid_${counter}.mmd" -o "images/mermaid-${counter}.png" -b transparent 2>&1 || echo "Failed to convert diagram ${counter}"
-                  counter=$((counter + 1))
-                fi
-              done
+              # Extract mermaid blocks using awk
+              awk '
+                /```mermaid/ { in_mermaid=1; block=""; next }
+                /```/ && in_mermaid { 
+                  if (block != "") {
+                    print block > "/tmp/mermaid_" counter ".mmd"
+                    counter++
+                  }
+                  in_mermaid=0
+                  block=""
+                  next
+                }
+                in_mermaid { block = block $0 "\n" }
+              ' counter=$counter "$file"
+              
+              # Update counter based on how many blocks were found
+              new_counter=$(find /tmp -name "mermaid_*.mmd" 2>/dev/null | wc -l)
+              counter=$((new_counter + 1))
+            fi
+          done
+          
+          # Convert all extracted mermaid files to PNG
+          for mmd_file in /tmp/mermaid_*.mmd; do
+            if [ -f "$mmd_file" ]; then
+              base=$(basename "$mmd_file" .mmd)
+              echo "Converting $base to PNG..."
+              mmdc -i "$mmd_file" -o "images/${base}.png" -b transparent 2>&1 || echo "Failed to convert $base"
             fi
           done
           
           # Replace mermaid blocks with image references
           echo "🔄 Replacing Mermaid blocks with images..."
           counter=1
-          find . -name "*.md" -type f | while read file; do
+          for file in $(find . -name "*.md" -type f | sort); do
             if grep -q '```mermaid' "$file"; then
               # Replace each mermaid block with image reference
-              awk -v counter=$counter '
+              awk -v start_counter=$counter '
+                BEGIN { counter = start_counter }
                 /```mermaid/ { 
-                  in_mermaid=1;
-                  img_path = "images/mermaid-" counter ".png";
-                  print "\n![Mermaid Diagram](" img_path ")\n";
-                  counter++;
-                  next;
+                  in_mermaid=1
+                  img_path = "images/mermaid_" counter ".png"
+                  print "\n![Mermaid Diagram](" img_path ")\n"
+                  counter++
+                  next
                 }
                 /```/ && in_mermaid { 
-                  in_mermaid=0;
-                  next;
+                  in_mermaid=0
+                  next
                 }
                 !in_mermaid { print }
               ' "$file" > "${file}.tmp"
               mv "${file}.tmp" "$file"
-              counter=$((counter + 1))
+              
+              # Update global counter
+              mermaid_count=$(grep -c '```mermaid' "${file}.tmp.bak" 2>/dev/null || echo "0")
+              counter=$((counter + mermaid_count))
             fi
           done
           
