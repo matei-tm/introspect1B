@@ -43,165 +43,22 @@ jobs:
 
       - name: Install dependencies
         run: |
-          echo "📦 Installing dependencies..."
+          echo "📦 Installing Pandoc and LaTeX..."
           sudo apt-get update
-          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic texlive-lang-chinese fonts-noto-color-emoji fonts-noto fonts-dejavu chromium-browser
-          
-          # Install Node.js for Mermaid CLI
-          curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-          sudo apt-get install -y nodejs
-          
-          # Install mermaid-cli for diagram conversion
-          sudo npm install -g @mermaid-js/mermaid-cli
-          
-          # Install Puppeteer with Chrome
-          sudo npm install -g puppeteer
-          
-          # Install Chrome for Puppeteer (required by mermaid-cli)
-          npx puppeteer browsers install chrome || echo "⚠️ Puppeteer Chrome install failed, will use system Chromium"
+          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic
 
       - name: Convert wiki to PDF
         run: |
           cd wiki-repo
-          echo "🔄 Preparing wiki for PDF conversion..."
+          echo "🔄 Converting wiki pages to PDF..."
+          
+          # Create a timestamp
+          TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')
           
           # Create output directory
           mkdir -p pdf-output
-          mkdir -p images
           
-          # Copy existing images from docs/media if it exists
-          if [ -d "docs/media" ]; then
-            echo "📁 Copying images from docs/media..."
-            cp -r docs/media/* images/ 2>/dev/null || echo "No files in docs/media to copy"
-            ls -la images/
-          fi
-          
-          # Download all referenced images from URLs (external images)
-          echo "📥 Downloading external images from URLs..."
-          find . -name "*.md" -type f | while read file; do
-            # Extract image URLs (both ![alt](url) and <img src="url">)
-            grep -oE '!\[.*\]\((https?://[^)]+)\)' "$file" | sed -E 's/!\[.*\]\(([^)]+)\)/\1/' | while read url; do
-              filename=$(basename "$url" | sed 's/[?#].*//')
-              echo "Downloading: $url -> images/$filename"
-              curl -sL "$url" -o "images/$filename" 2>&1 || echo "Failed to download $url"
-            done
-            
-            grep -oE '<img[^>]+src="(https?://[^"]+)"' "$file" | sed -E 's/.*src="([^"]+)".*/\1/' | while read url; do
-              filename=$(basename "$url" | sed 's/[?#].*//')
-              echo "Downloading: $url -> images/$filename"
-              curl -sL "$url" -o "images/$filename" 2>&1 || echo "Failed to download $url"
-            done
-          done
-          
-          # Replace various image path formats with local paths
-          echo "🔄 Updating image references to local paths..."
-          find . -name "*.md" -type f | while read file; do
-            # Replace docs/media/ paths with images/
-            sed -i.bak -E 's|!\[([^]]*)\]\(docs/media/([^)]+)\)|![\1](images/\2)|g' "$file"
-            sed -i.bak -E 's|<img([^>]*)src="docs/media/([^"]+)"([^>]*)>|<img\1src="images/\2"\3>|g' "$file"
-            
-            # Replace /docs/media/ paths with images/
-            sed -i.bak -E 's|!\[([^]]*)\]\(/docs/media/([^)]+)\)|![\1](images/\2)|g' "$file"
-            sed -i.bak -E 's|<img([^>]*)src="/docs/media/([^"]+)"([^>]*)>|<img\1src="images/\2"\3>|g' "$file"
-            
-            # Replace URL image references with local paths
-            sed -i.bak -E 's|!\[([^]]*)\]\((https?://[^)]+/([^/)]+))\)|![\1](images/\3)|g' "$file"
-            sed -i.bak -E 's|<img([^>]*)src="https?://[^"/]+/([^"]+)"([^>]*)>|<img\1src="images/\2"\3>|g' "$file"
-            
-            rm -f "${file}.bak"
-          done
-          
-          # Process Mermaid diagrams
-          echo "🎨 Converting Mermaid diagrams to images..."
-          
-          # Configure Puppeteer for mermaid-cli
-          cat > /tmp/puppeteer-config.json << 'PUPCONFIG'
-          {
-            "args": ["--no-sandbox", "--disable-setuid-sandbox"]
-          }
-          PUPCONFIG
-          
-          # First, extract all mermaid blocks to separate files
-          counter=1
-          for file in $(find . -name "*.md" -type f | sort); do
-            if grep -q '```mermaid' "$file"; then
-              echo "Processing Mermaid diagrams in $file"
-              
-              # Extract mermaid blocks using awk
-              awk '
-                /```mermaid/ { in_mermaid=1; block=""; next }
-                /```/ && in_mermaid { 
-                  if (block != "") {
-                    print block > "/tmp/mermaid_" counter ".mmd"
-                    counter++
-                  }
-                  in_mermaid=0
-                  block=""
-                  next
-                }
-                in_mermaid { block = block $0 "\n" }
-              ' counter=$counter "$file"
-              
-              # Update counter based on how many blocks were found
-              new_counter=$(find /tmp -name "mermaid_*.mmd" 2>/dev/null | wc -l)
-              counter=$((new_counter + 1))
-            fi
-          done
-          
-          # Convert all extracted mermaid files to PNG
-          echo "🔍 Locating Chrome browser for Mermaid rendering..."
-          
-          # Find Chrome executable installed by Puppeteer
-          CHROME_PATH=$(find ~/.cache/puppeteer/chrome -name chrome -type f 2>/dev/null | head -1)
-          if [ -z "$CHROME_PATH" ]; then
-            echo "Chrome not found in Puppeteer cache, trying system paths..."
-            CHROME_PATH=$(which google-chrome || which chromium || which chromium-browser || echo "/usr/bin/chromium-browser")
-          fi
-          
-          if [ -n "$CHROME_PATH" ] && [ -f "$CHROME_PATH" ]; then
-            echo "✓ Using Chrome at: $CHROME_PATH"
-            export PUPPETEER_EXECUTABLE_PATH="$CHROME_PATH"
-          else
-            echo "⚠️ Warning: Chrome not found, Mermaid conversion may fail"
-          fi
-          
-          for mmd_file in /tmp/mermaid_*.mmd; do
-            if [ -f "$mmd_file" ]; then
-              base=$(basename "$mmd_file" .mmd)
-              echo "Converting $base to PNG..."
-              mmdc -i "$mmd_file" -o "images/${base}.png" -b transparent -p /tmp/puppeteer-config.json || echo "Failed to convert $base"
-            fi
-          done
-          
-          # Replace mermaid blocks with image references
-          echo "🔄 Replacing Mermaid blocks with images..."
-          counter=1
-          for file in $(find . -name "*.md" -type f | sort); do
-            if grep -q '```mermaid' "$file"; then
-              # Replace each mermaid block with image reference
-              awk -v start_counter=$counter '
-                BEGIN { counter = start_counter }
-                /```mermaid/ { 
-                  in_mermaid=1
-                  img_path = "images/mermaid_" counter ".png"
-                  print "\n![Mermaid Diagram](" img_path ")\n"
-                  counter++
-                  next
-                }
-                /```/ && in_mermaid { 
-                  in_mermaid=0
-                  next
-                }
-                !in_mermaid { print }
-              ' "$file" > "${file}.tmp"
-              mv "${file}.tmp" "$file"
-              
-              # Update global counter
-              mermaid_count=$(grep -c '```mermaid' "${file}.tmp.bak" 2>/dev/null || echo "0")
-              counter=$((counter + mermaid_count))
-            fi
-          done
-          
+          # Create a combined PDF with all pages
           echo "📚 Creating combined PDF..."
           
           # Combine all markdown files into one
@@ -226,28 +83,19 @@ jobs:
             echo "" >> combined.md
           done
           
-          # List downloaded images for debugging
-          echo "📸 Images available for PDF:"
-          ls -lh images/ || echo "No images directory"
-          
-          # Convert combined markdown to PDF with image support
-          echo "📄 Converting to PDF..."
-          
-          # Remove emojis from markdown for cleaner PDF (LaTeX has issues with emoji fonts)
-          echo "🧹 Removing emojis for PDF compatibility..."
-          sed -i 's/[🚀🔧📦📚💰🏗✅❌⚠️📋📊🔍🎨🔄📸📄🖼️🔑📐🔐🎯💻🐛📈📉📱🎚🎛🔴🔵🟡🟢🟠🆘🧹🔗📝🤝👂⏱⃣✓]//g' combined.md
-          
+          # Convert combined markdown to PDF
           pandoc combined.md \
             -o "pdf-output/wiki-complete.pdf" \
             --pdf-engine=xelatex \
-            --toc \
-            --toc-depth=2 \
             -V geometry:margin=1in \
-            -V linkcolor:blue \
-            -V documentclass=report \
-            --resource-path=.:images \
-            --standalone \
-            2>&1 | head -50
+            -V colorlinks=true \
+            -V linkcolor=blue \
+            -V urlcolor=blue \
+            --toc \
+            --metadata title="Wiki Documentation" \
+            --metadata author="${{ github.repository }}" \
+            --metadata date="$(date +'%Y-%m-%d')" \
+            2>&1 || echo "⚠️ Failed to create combined PDF"
           
           echo ""
           echo "✅ PDF conversion complete"
@@ -307,7 +155,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.create_tag.outputs.tag_name }}
-          name: Wiki Documentation ${{ steps.create_tag.outputs.tag_name }}
+          name:  ${{ steps.create_tag.outputs.tag_name }}
           body: |
             # Wiki Documentation
             
@@ -325,9 +173,10 @@ jobs:
             - ✅ Table of contents
             - ✅ All wiki pages combined
             - ✅ Clickable hyperlinks
-            - ✅ Images and Mermaid diagrams
             - ✅ Professional formatting
-            
+
+            - ⚠️ Images and Mermaid diagrams (work in progress. They are available in the source markdown files.)
+
             ## 🔗 Download
             
             Download the PDF from the assets below.
@@ -357,7 +206,7 @@ jobs:
           echo "- ✅ All wiki pages in one document" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Clickable hyperlinks" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Professional formatting" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Images and Mermaid diagrams" >> $GITHUB_STEP_SUMMARY
+          echo "- ⚠️ Images and Mermaid diagrams (work in progress. They are available in the source markdown files.)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🔗 Access" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
