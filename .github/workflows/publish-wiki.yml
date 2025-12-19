@@ -12,7 +12,9 @@ jobs:
     name: Clone and Publish Wiki
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Required for creating releases
+      contents: write      # Required for creating releases and pushing tags
+      id-token: write      # Required for OIDC authentication
+      packages: write      # Required for GitHub Packages (if needed)
     
     steps:
       - name: Checkout main repository
