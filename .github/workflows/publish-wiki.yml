@@ -45,7 +45,7 @@ jobs:
         run: |
           echo "📦 Installing dependencies..."
           sudo apt-get update
-          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic texlive-lang-chinese fonts-noto-color-emoji fonts-noto fonts-dejavu
+          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic texlive-lang-chinese fonts-noto-color-emoji fonts-noto fonts-dejavu chromium-browser
           
           # Install Node.js for Mermaid CLI
           curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -58,7 +58,7 @@ jobs:
           sudo npm install -g puppeteer
           
           # Install Chrome for Puppeteer (required by mermaid-cli)
-          npx puppeteer browsers install chrome
+          npx puppeteer browsers install chrome || echo "⚠️ Puppeteer Chrome install failed, will use system Chromium"
 
       - name: Convert wiki to PDF
         run: |
@@ -149,12 +149,27 @@ jobs:
           done
           
           # Convert all extracted mermaid files to PNG
-          export PUPPETEER_EXECUTABLE_PATH=$(which chrome || npx puppeteer browsers install chrome --path)
+          echo "🔍 Locating Chrome browser for Mermaid rendering..."
+          
+          # Find Chrome executable installed by Puppeteer
+          CHROME_PATH=$(find ~/.cache/puppeteer/chrome -name chrome -type f 2>/dev/null | head -1)
+          if [ -z "$CHROME_PATH" ]; then
+            echo "Chrome not found in Puppeteer cache, trying system paths..."
+            CHROME_PATH=$(which google-chrome || which chromium || which chromium-browser || echo "/usr/bin/chromium-browser")
+          fi
+          
+          if [ -n "$CHROME_PATH" ] && [ -f "$CHROME_PATH" ]; then
+            echo "✓ Using Chrome at: $CHROME_PATH"
+            export PUPPETEER_EXECUTABLE_PATH="$CHROME_PATH"
+          else
+            echo "⚠️ Warning: Chrome not found, Mermaid conversion may fail"
+          fi
+          
           for mmd_file in /tmp/mermaid_*.mmd; do
             if [ -f "$mmd_file" ]; then
               base=$(basename "$mmd_file" .mmd)
               echo "Converting $base to PNG..."
-              mmdc -i "$mmd_file" -o "images/${base}.png" -b transparent -p /tmp/puppeteer-config.json 2>&1 || echo "Failed to convert $base"
+              npx -y @mermaid-js/mermaid-cli mmdc -i "$mmd_file" -o "images/${base}.png" -b transparent -p /tmp/puppeteer-config.json 2>&1 || echo "Failed to convert $base"
             fi
           done
           
