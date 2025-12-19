@@ -45,7 +45,13 @@ jobs:
         run: |
           echo "📦 Installing Pandoc and LaTeX..."
           sudo apt-get update
-          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic librsvg2-bin
+          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic texlive-latex-extra librsvg2-bin
+          
+          echo "✅ Verifying installations..."
+          which pandoc
+          which xelatex
+          which rsvg-convert
+          rsvg-convert --version
 
       - name: Convert wiki to PDF
         run: |
