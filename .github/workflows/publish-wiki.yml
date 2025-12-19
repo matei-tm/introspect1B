@@ -45,7 +45,7 @@ jobs:
         run: |
           echo "📦 Installing dependencies..."
           sudo apt-get update
-          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic texlive-lang-chinese fonts-noto-color-emoji fonts-noto
+          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-plain-generic texlive-lang-chinese fonts-noto-color-emoji fonts-noto fonts-dejavu
           
           # Install Node.js for Mermaid CLI
           curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -54,8 +54,11 @@ jobs:
           # Install mermaid-cli for diagram conversion
           sudo npm install -g @mermaid-js/mermaid-cli
           
-          # Install Playwright for mermaid-cli (required for rendering)
-          sudo npx playwright install --with-deps chromium
+          # Install Puppeteer with Chrome
+          sudo npm install -g puppeteer
+          
+          # Install Chrome for Puppeteer (required by mermaid-cli)
+          npx puppeteer browsers install chrome
 
       - name: Convert wiki to PDF
         run: |
@@ -111,6 +114,13 @@ jobs:
           # Process Mermaid diagrams
           echo "🎨 Converting Mermaid diagrams to images..."
           
+          # Configure Puppeteer for mermaid-cli
+          cat > /tmp/puppeteer-config.json << 'PUPCONFIG'
+          {
+            "args": ["--no-sandbox", "--disable-setuid-sandbox"]
+          }
+          PUPCONFIG
+          
           # First, extract all mermaid blocks to separate files
           counter=1
           for file in $(find . -name "*.md" -type f | sort); do
@@ -139,11 +149,12 @@ jobs:
           done
           
           # Convert all extracted mermaid files to PNG
+          export PUPPETEER_EXECUTABLE_PATH=$(which chrome || npx puppeteer browsers install chrome --path)
           for mmd_file in /tmp/mermaid_*.mmd; do
             if [ -f "$mmd_file" ]; then
               base=$(basename "$mmd_file" .mmd)
               echo "Converting $base to PNG..."
-              mmdc -i "$mmd_file" -o "images/${base}.png" -b transparent 2>&1 || echo "Failed to convert $base"
+              mmdc -i "$mmd_file" -o "images/${base}.png" -b transparent -p /tmp/puppeteer-config.json 2>&1 || echo "Failed to convert $base"
             fi
           done
           
@@ -213,8 +224,7 @@ jobs:
             -V colorlinks=true \
             -V linkcolor=blue \
             -V urlcolor=blue \
-            -V mainfont="Noto Sans" \
-            -V CJKmainfont="Noto Sans CJK SC" \
+            -V mainfont="DejaVu Sans" \
             --toc \
             --resource-path=.:images \
             --metadata title="Wiki Documentation" \
