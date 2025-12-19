@@ -111,8 +111,8 @@ jobs:
             -V linkcolor=blue \
             -V urlcolor=blue \
             --toc \
-            --metadata title="Wiki Documentation" \
-            --metadata author="${{ github.repository }}" \
+            --metadata title="Wiki Documentation (Introspect1B)" \
+            --metadata author="Mircea-Tiberiu MATEI" \
             --metadata date="$(date +'%Y-%m-%d')" \
             2>&1 || echo "⚠️ Failed to create combined PDF"
           
