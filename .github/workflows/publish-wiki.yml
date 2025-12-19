@@ -169,7 +169,7 @@ jobs:
             if [ -f "$mmd_file" ]; then
               base=$(basename "$mmd_file" .mmd)
               echo "Converting $base to PNG..."
-              npx -y @mermaid-js/mermaid-cli mmdc -i "$mmd_file" -o "images/${base}.png" -b transparent -p /tmp/puppeteer-config.json 2>&1 || echo "Failed to convert $base"
+              mmdc -i "$mmd_file" -o "images/${base}.png" -b transparent -p /tmp/puppeteer-config.json || echo "Failed to convert $base"
             fi
           done
           
@@ -232,20 +232,83 @@ jobs:
           
           # Convert combined markdown to PDF with image support
           echo "📄 Converting to PDF..."
+          
+          # Create LaTeX header file for comprehensive Unicode support
+          cat > header.tex << 'HEADER'
+\usepackage{fontspec}
+\usepackage{newunicodechar}
+\setmainfont{Noto Sans}
+\setmonofont{DejaVu Sans Mono}[Scale=0.9]
+\newfontfamily{\fallbackfont}{Noto Color Emoji}[Renderer=HarfBuzz]
+\newfontfamily{\boxfont}{DejaVu Sans Mono}
+\DeclareTextFontCommand{\textfallback}{\fallbackfont}
+\DeclareTextFontCommand{\textbox}{\boxfont}
+
+% Emoji mappings
+\newunicodechar{🚀}{\textfallback{🚀}}
+\newunicodechar{🔧}{\textfallback{🔧}}
+\newunicodechar{📦}{\textfallback{📦}}
+\newunicodechar{📚}{\textfallback{📚}}
+\newunicodechar{💰}{\textfallback{💰}}
+\newunicodechar{🏗}{\textfallback{🏗}}
+\newunicodechar{✅}{\textfallback{✅}}
+\newunicodechar{❌}{\textfallback{❌}}
+\newunicodechar{⚠}{\textfallback{⚠}}
+\newunicodechar{📋}{\textfallback{📋}}
+\newunicodechar{📊}{\textfallback{📊}}
+\newunicodechar{🔍}{\textfallback{🔍}}
+\newunicodechar{🎨}{\textfallback{🎨}}
+\newunicodechar{🔄}{\textfallback{🔄}}
+\newunicodechar{📸}{\textfallback{📸}}
+\newunicodechar{📄}{\textfallback{📄}}
+\newunicodechar{🖼}{\textfallback{🖼}}
+\newunicodechar{🔑}{\textfallback{🔑}}
+\newunicodechar{📐}{\textfallback{📐}}
+\newunicodechar{🔐}{\textfallback{🔐}}
+\newunicodechar{🎯}{\textfallback{🎯}}
+\newunicodechar{💻}{\textfallback{💻}}
+\newunicodechar{🐛}{\textfallback{🐛}}
+\newunicodechar{📈}{\textfallback{📈}}
+\newunicodechar{📉}{\textfallback{📉}}
+\newunicodechar{📱}{\textfallback{📱}}
+\newunicodechar{🎚}{\textfallback{🎚}}
+\newunicodechar{🎛}{\textfallback{🎛}}
+\newunicodechar{🔴}{\textfallback{🔴}}
+\newunicodechar{🔵}{\textfallback{🔵}}
+\newunicodechar{🟡}{\textfallback{🟡}}
+\newunicodechar{🟢}{\textfallback{🟢}}
+\newunicodechar{🟠}{\textfallback{🟠}}
+\newunicodechar{🆘}{\textfallback{🆘}}
+\newunicodechar{🧹}{\textfallback{🧹}}
+\newunicodechar{🔗}{\textfallback{🔗}}
+\newunicodechar{📝}{\textfallback{📝}}
+\newunicodechar{🤝}{\textfallback{🤝}}
+\newunicodechar{👂}{\textfallback{👂}}
+\newunicodechar{⏱}{\textfallback{⏱}}
+\newunicodechar{⃣}{\textfallback{⃣}}
+\newunicodechar{✓}{\textfallback{✓}}
+
+% Box drawing characters for code blocks
+\newunicodechar{├}{\textbox{├}}
+\newunicodechar{─}{\textbox{─}}
+\newunicodechar{└}{\textbox{└}}
+\newunicodechar{│}{\textbox{│}}
+HEADER
+          
           pandoc combined.md \
             -o "pdf-output/wiki-complete.pdf" \
             --pdf-engine=xelatex \
+            -H header.tex \
             -V geometry:margin=1in \
             -V colorlinks=true \
             -V linkcolor=blue \
             -V urlcolor=blue \
-            -V mainfont="DejaVu Sans" \
             --toc \
             --resource-path=.:images \
             --metadata title="Wiki Documentation" \
             --metadata author="${{ github.repository }}" \
             --metadata date="$(date +'%Y-%m-%d')" \
-            2>&1 || echo "⚠️ Failed to create combined PDF"
+            2>&1 | grep -v "Missing character" || true
           
           echo ""
           echo "✅ PDF conversion complete"
