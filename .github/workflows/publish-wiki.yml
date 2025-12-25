@@ -3,9 +3,7 @@ name: 5. Publish Wiki
 on:
   workflow_dispatch:
     # Allow manual triggering
-  schedule:
-    # Run daily at 2:00 AM GMT
-    - cron: '0 2 * * *'
+
 
 jobs:
   publish-wiki:
